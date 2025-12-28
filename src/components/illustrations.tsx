@@ -9,35 +9,62 @@ export function StudyingIllustration(props: SVGProps<SVGSVGElement>) {
       role="img"
       {...props}
     >
-      <title id="student-with-phone-title">2D vector illustration of a cartoon student holding a phone with the Prep Quiz app.</title>
+      <title id="student-with-phone-title">Illustration of a student sitting and using the Prep Quiz app on a smartphone.</title>
       
-      {/* Background shapes */}
-      <circle cx="30" cy="40" r="15" fill="hsl(var(--primary) / 0.1)" />
-      <rect x="150" y="80" width="30" height="30" rx="8" fill="hsl(var(--accent) / 0.2)" transform="rotate(-20 165 95)" />
-      <path d="M 170,15 L 185,30 L 170,45 L 155,30 Z" fill="hsl(var(--primary) / 0.15)" />
+      <defs>
+        <linearGradient id="person-shirt-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" style={{stopColor: 'hsl(var(--primary))', stopOpacity: 1}} />
+          <stop offset="100%" style={{stopColor: 'hsl(var(--primary) / 0.7)', stopOpacity: 1}} />
+        </linearGradient>
+        <linearGradient id="person-trousers-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" style={{stopColor: 'hsl(var(--foreground) / 0.8)'}} />
+          <stop offset="100%" style={{stopColor: 'hsl(var(--foreground) / 0.6)'}} />
+        </linearGradient>
+        <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur in="SourceAlpha" stdDeviation="2"/>
+            <feOffset dx="1" dy="2" result="offsetblur"/>
+            <feComponentTransfer>
+                <feFuncA type="linear" slope="0.3"/>
+            </feComponentTransfer>
+            <feMerge> 
+                <feMergeNode/>
+                <feMergeNode in="SourceGraphic"/> 
+            </feMerge>
+        </filter>
+      </defs>
+
+      {/* Background elements */}
+      <circle cx="40" cy="50" r="20" fill="hsl(var(--primary) / 0.1)" />
+      <rect x="140" y="70" width="40" height="40" rx="8" fill="hsl(var(--accent) / 0.15)" transform="rotate(-15 160 90)" />
 
       {/* Person */}
-      <g transform="translate(0, 10)">
-        {/* Legs */}
-        <rect x="90" y="115" width="20" height="25" fill="hsl(var(--foreground) / 0.7)" />
-        {/* Body */}
-        <rect x="75" y="65" width="50" height="50" rx="15" fill="hsl(var(--primary))" />
-        {/* Head */}
-        <circle cx="100" cy="45" r="22" fill="hsl(var(--accent) / 0.9)" />
-        <path d="M 80 25 C 80 10, 120 10, 120 25 L 115 30 L 85 30 Z" fill="hsl(var(--foreground) / 0.8)" />
-      </g>
+      <g transform="translate(15, 0)" filter="url(#shadow)">
+          {/* Legs */}
+          <path d="M 85 100 L 80 140 L 100 140 L 105 100 Z" fill="url(#person-trousers-gradient)" />
+          
+          {/* Body */}
+          <path d="M 70 50 C 70 30, 130 30, 130 50 L 125 105 L 75 105 Z" fill="url(#person-shirt-gradient)" />
+          
+          {/* Head */}
+          <circle cx="100" cy="35" r="25" fill="hsl(var(--accent) / 0.8)" />
+          <path d="M 80 15 C 80 0, 120 0, 120 15 L 110 20 L 90 20 Z" fill="hsl(var(--foreground) / 0.7)" />
+          <circle cx="92" cy="35" r="1.5" fill="hsl(var(--foreground) / 0.7)" />
+          <circle cx="108" cy="35" r="1.5" fill="hsl(var(--foreground) / 0.7)" />
+          <path d="M 98 42 Q 100 45, 102 42" stroke="hsl(var(--foreground) / 0.7)" strokeWidth="1.5" fill="none" />
 
-      {/* Phone */}
-      <g transform="translate(50 75)">
-        <rect x="0" y="0" width="40" height="65" rx="8" fill="hsl(var(--card-foreground))" />
-        <rect x="3" y="3" width="34" height="59" rx="6" fill="hsl(var(--background))" />
-        
-        {/* App Logo on Screen */}
-        <g transform="translate(9, 20) scale(0.9)">
-            <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" stroke="hsl(var(--primary))" fill="none" strokeWidth="1.5" />
-            <path d="m9 9.5 2 2 4-4" stroke="hsl(var(--accent))" strokeWidth="2" />
-            <path d="m9 14.5 2 2 4-4" stroke="hsl(var(--accent))" strokeWidth="2" />
-        </g>
+          {/* Arms & Phone */}
+          <g>
+            <rect x="50" y="60" width="50" height="15" rx="7" fill="url(#person-shirt-gradient)" transform="rotate(10 75 67.5)" />
+            {/* Phone */}
+            <rect x="35" y="65" width="45" height="70" rx="8" fill="hsl(var(--foreground) / 0.9)" />
+            <rect x="38" y="68" width="39" height="64" rx="6" fill="hsl(var(--background))" />
+            {/* App Logo on Screen */}
+            <g transform="translate(45, 85) scale(1)">
+                <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" stroke="hsl(var(--primary))" fill="none" strokeWidth="1.2" />
+                <path d="m9 9.5 2 2 4-4" stroke="hsl(var(--accent))" strokeWidth="1.5" fill="none" />
+                <path d="m9 14.5 2 2 4-4" stroke="hsl(var(--accent))" strokeWidth="1.5" fill="none" />
+            </g>
+          </g>
       </g>
     </svg>
   );
