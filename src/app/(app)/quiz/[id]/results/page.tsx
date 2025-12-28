@@ -1,12 +1,12 @@
-import { Suspense } from 'react';
-import { QuizResults } from '@/components/quiz/quiz-results';
+'use client';
+
+import { Suspense, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { QuizResults, type DetailedQuizResults } from '@/components/quiz/quiz-results';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PageHeader } from '@/components/shared/page-header';
-
-type ResultsPageProps = {
-    searchParams: { [key: string]: string | string[] | undefined };
-};
+import { Button } from '@/components/ui/button';
 
 function ResultsFallback() {
     return (
@@ -26,39 +26,49 @@ function ResultsFallback() {
     )
 }
 
-export default function ResultsPage({ searchParams }: ResultsPageProps) {
-  const { 
-    quizId, 
-    score, 
-    correctAnswers, 
-    incorrectAnswers, 
-    skippedQuestions, 
-    totalQuestions, 
-    categoryScores 
-  } = searchParams;
+export default function ResultsPage() {
+  const router = useRouter();
+  const [results, setResults] = useState<DetailedQuizResults | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  if (!quizId || !score || !correctAnswers || !incorrectAnswers || !skippedQuestions || !totalQuestions || !categoryScores) {
+  useEffect(() => {
+    const resultsData = sessionStorage.getItem('quizResults');
+    if (resultsData) {
+      try {
+        const parsedData = JSON.parse(resultsData);
+        setResults(parsedData);
+        // Optional: Clear the data after reading to prevent re-using old results
+        // sessionStorage.removeItem('quizResults');
+      } catch (e) {
+        console.error('Failed to parse quiz results:', e);
+        setError('There was an error loading your results. The data was corrupted.');
+      }
+    } else {
+      setError('No quiz results found. Please take a quiz to see your results.');
+    }
+  }, []);
+
+  if (error) {
     return (
         <div>
-            <PageHeader title="Quiz Results" description="There was an error loading your results." />
-            <p>Please try taking the quiz again.</p>
+            <PageHeader title="Quiz Results" description={error} />
+            <Button onClick={() => router.push('/quiz')}>Take a Quiz</Button>
         </div>
     );
   }
 
-  const results = {
-    quizId: String(quizId),
-    score: Number(score),
-    correctAnswers: Number(correctAnswers),
-    incorrectAnswers: Number(incorrectAnswers),
-    skippedQuestions: Number(skippedQuestions),
-    totalQuestions: Number(totalQuestions),
-    categoryScores: JSON.parse(String(categoryScores)),
-  };
+  if (!results) {
+    return (
+        <div>
+            <PageHeader title="Quiz Results" description="Loading your performance..." />
+            <ResultsFallback />
+        </div>
+    )
+  }
 
   return (
     <div>
-        <PageHeader title="Quiz Results" description="Here's how you performed in the quiz." />
+        <PageHeader title="Quiz Results" description={`Here's how you performed in the ${results.quizTitle} quiz.`} />
         <Suspense fallback={<ResultsFallback />}>
             <QuizResults results={results} />
         </Suspense>

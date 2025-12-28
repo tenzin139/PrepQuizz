@@ -11,14 +11,15 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
+const QuestionResultSchema = z.object({
+  questionText: z.string().describe('The text of the quiz question.'),
+  userAnswer: z.string().describe("The answer the user selected."),
+  correctAnswer: z.string().describe('The correct answer for the question.'),
+  category: z.string().describe('The category of the question.'),
+});
+
 const PersonalizedFeedbackInputSchema = z.object({
-  quizResults: z.object({
-    correctAnswers: z.number().describe('The number of correct answers.'),
-    incorrectAnswers: z.number().describe('The number of incorrect answers.'),
-    skippedQuestions: z.number().describe('The number of skipped questions.'),
-    totalQuestions: z.number().describe('The total number of questions in the quiz.'),
-    categoryScores: z.record(z.number()).describe('A record of scores for each quiz category.'),
-  }).describe('The results of the quiz.'),
+  incorrectQuestions: z.array(QuestionResultSchema).describe('An array of questions the user answered incorrectly.'),
   userName: z.string().describe('The name of the user who took the quiz.'),
   userAge: z.number().describe('The age of the user who took the quiz.'),
   userState: z.string().describe('The state of the user who took the quiz.'),
@@ -26,8 +27,15 @@ const PersonalizedFeedbackInputSchema = z.object({
 
 export type PersonalizedFeedbackInput = z.infer<typeof PersonalizedFeedbackInputSchema>;
 
+const QuestionFeedbackSchema = z.object({
+  questionText: z.string(),
+  feedback: z.string().describe("A short, encouraging explanation for why the user's answer was incorrect and the correct answer is right."),
+  resourceQuery: z.string().describe("A concise Google search query (3-5 words) to help the user find resources to learn more about the topic of the question."),
+});
+
 const PersonalizedFeedbackOutputSchema = z.object({
-  feedback: z.string().describe('Personalized feedback for the user, highlighting weak areas and suggesting topics for improvement.'),
+  overallFeedback: z.string().describe("A brief, overall summary of the user's performance, highlighting general areas for improvement."),
+  questionFeedback: z.array(QuestionFeedbackSchema).describe('An array of detailed feedback for each incorrect question.'),
 });
 
 export type PersonalizedFeedbackOutput = z.infer<typeof PersonalizedFeedbackOutputSchema>;
@@ -40,24 +48,32 @@ const personalizedFeedbackPrompt = ai.definePrompt({
   name: 'personalizedFeedbackPrompt',
   input: {schema: PersonalizedFeedbackInputSchema},
   output: {schema: PersonalizedFeedbackOutputSchema},
-  prompt: `You are an AI-powered educational assistant that provides personalized feedback to students after they complete a quiz.
+  prompt: `You are an AI-powered educational assistant that provides personalized, constructive, and encouraging feedback to students after a quiz.
 
-  Analyze the student's quiz performance and provide feedback that highlights their weak areas and suggests topics for improvement.
-  Be encouraging and supportive, and tailor the feedback to the student's age and state.
+  Analyze the student's performance on the questions they answered incorrectly.
 
-  Here is the student's quiz information:
+  For the overall feedback, provide a brief, supportive summary (1-2 sentences) of their performance based on the categories of the incorrect questions.
+
+  For each incorrect question, provide:
+  1. A short, encouraging explanation (1-2 sentences) of why their answer was incorrect and why the correct answer is right.
+  2. A concise Google search query (3-5 words) that would lead them to reliable resources to learn more about the question's topic.
+
+  Here is the student's information:
   User Name: {{{userName}}}
   User Age: {{{userAge}}}
   User State: {{{userState}}}
-  Quiz Results:
-    Correct Answers: {{{quizResults.correctAnswers}}}
-    Incorrect Answers: {{{quizResults.incorrectAnswers}}}
-    Skipped Questions: {{{quizResults.skippedQuestions}}}
-    Total Questions: {{{quizResults.totalQuestions}}}
-    Category Scores: {{#each quizResults.categoryScores}}{{{@key}}}: {{{this}}} {{/each}}
 
-  Generate personalized feedback for the student:
-  `,config: {
+  Incorrect Questions:
+  {{#each incorrectQuestions}}
+  - Question: "{{this.questionText}}"
+    Category: {{this.category}}
+    Your Answer: "{{this.userAnswer}}"
+    Correct Answer: "{{this.correctAnswer}}"
+  {{/each}}
+
+  Generate the personalized feedback in the required JSON format.
+  `,
+  config: {
     safetySettings: [
       {
         category: 'HARM_CATEGORY_HATE_SPEECH',
@@ -86,6 +102,13 @@ const personalizedFeedbackFlow = ai.defineFlow(
     outputSchema: PersonalizedFeedbackOutputSchema,
   },
   async input => {
+    // If there are no incorrect questions, return a positive message.
+    if (input.incorrectQuestions.length === 0) {
+      return {
+        overallFeedback: `Great job, ${input.userName}! You answered all the questions correctly. Keep up the excellent work!`,
+        questionFeedback: [],
+      };
+    }
     const {output} = await personalizedFeedbackPrompt(input);
     return output!;
   }

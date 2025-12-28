@@ -31,7 +31,6 @@ export function QuizClient({ quiz, questions }: QuizClientProps) {
   const [selectedAnswers, setSelectedAnswers] = React.useState<Record<string, string>>({});
   const [timeLeft, setTimeLeft] = React.useState(120); // 2 minutes
   const [showTimeoutAlert, setShowTimeoutAlert] = React.useState(false);
-  const [answeredCount, setAnsweredCount] = React.useState(0);
 
   const timerRef = React.useRef<NodeJS.Timeout | null>(null);
 
@@ -40,11 +39,12 @@ export function QuizClient({ quiz, questions }: QuizClientProps) {
         clearInterval(timerRef.current);
     }
     
-    let correctAnswers = 0;
-    let incorrectAnswers = 0;
+    let correctAnswersCount = 0;
+    let incorrectAnswersCount = 0;
     const categoryScores: Record<string, number> = {};
     const categoryTotals: Record<string, number> = {};
-    const answeredQuestionIds = Object.keys(selectedAnswers);
+    const incorrectQuestions: (QuizQuestion & { userAnswer: string })[] = [];
+
 
     questions.forEach((q) => {
         if (!categoryTotals[q.category]) {
@@ -52,51 +52,55 @@ export function QuizClient({ quiz, questions }: QuizClientProps) {
             categoryScores[q.category] = 0;
         }
         categoryTotals[q.category]++;
-    });
 
-    answeredQuestionIds.forEach(questionId => {
-        const question = questions.find(q => q.id.toString() === questionId);
-        if (question) {
-            const selected = selectedAnswers[questionId];
-            if (selected === question.answer) {
-                correctAnswers++;
-                categoryScores[question.category] = (categoryScores[question.category] || 0) + 1;
+        const userAnswer = selectedAnswers[q.id.toString()];
+        if (userAnswer) {
+            if (userAnswer === q.answer) {
+                correctAnswersCount++;
+                categoryScores[q.category] = (categoryScores[q.category] || 0) + 1;
             } else {
-                incorrectAnswers++;
+                incorrectAnswersCount++;
+                incorrectQuestions.push({ ...q, userAnswer });
             }
         }
     });
 
-    const skippedQuestions = answeredCount - correctAnswers - incorrectAnswers;
-    const finalScore = (correctAnswers * 3) - (incorrectAnswers * 5) - (skippedQuestions * 1);
+    const answeredCount = Object.keys(selectedAnswers).length;
+    const skippedQuestionsCount = questions.length - answeredCount;
+    const finalScore = Math.max(0, (correctAnswersCount * 3) - (incorrectAnswersCount * 1));
     
     const finalCategoryScores: Record<string, number> = {};
     for (const category in categoryTotals) {
-        if (categoryScores[category]) {
-            const questionsInCategoryAnswered = questions.filter(q => q.category === category && answeredQuestionIds.includes(q.id.toString())).length;
-            if(questionsInCategoryAnswered > 0) {
-                 finalCategoryScores[category] = (categoryScores[category] / questionsInCategoryAnswered) * 100;
-            } else {
-                finalCategoryScores[category] = 0;
-            }
+        const questionsInCategoryAnswered = questions.filter(q => q.category === category && selectedAnswers[q.id.toString()]).length;
+        if(questionsInCategoryAnswered > 0) {
+              finalCategoryScores[category] = (categoryScores[category] / questionsInCategoryAnswered) * 100;
         } else {
-             finalCategoryScores[category] = 0;
+            finalCategoryScores[category] = 0;
         }
     }
 
     const results = {
+        quizId: quiz.id,
+        quizTitle: quiz.title,
         score: finalScore,
-        correctAnswers,
-        incorrectAnswers,
-        skippedQuestions,
-        totalQuestions: answeredCount,
-        categoryScores: JSON.stringify(finalCategoryScores),
-        quizId: quiz.id
+        correctAnswers: correctAnswersCount,
+        incorrectAnswers: incorrectAnswersCount,
+        skippedQuestions: skippedQuestionsCount,
+        totalQuestions: questions.length,
+        categoryScores: finalCategoryScores,
+        incorrectQuestions: incorrectQuestions.map(q => ({ 
+          questionText: q.text,
+          userAnswer: q.userAnswer,
+          correctAnswer: q.answer,
+          category: q.category,
+        })),
+        allQuestions: questions,
+        userAnswers: selectedAnswers,
     };
     
-    const params = new URLSearchParams(Object.entries(results).map(([k, v]) => [k, String(v)]));
-    router.push(`/quiz/${quiz.id}/results?${params.toString()}`);
-  }, [selectedAnswers, questions, quiz.id, router, answeredCount]);
+    sessionStorage.setItem('quizResults', JSON.stringify(results));
+    router.push(`/quiz/${quiz.id}/results`);
+  }, [selectedAnswers, questions, quiz.id, quiz.title, router]);
 
 
   React.useEffect(() => {
@@ -119,25 +123,22 @@ export function QuizClient({ quiz, questions }: QuizClientProps) {
   }, []);
 
   const handleSelectAnswer = (questionId: number, answer: string) => {
-    const questionIdStr = questionId.toString();
-    if (!selectedAnswers[questionIdStr]) {
-        setAnsweredCount(prev => prev + 1);
-    }
-    setSelectedAnswers((prev) => ({ ...prev, [questionIdStr]: answer }));
+    setSelectedAnswers((prev) => ({ ...prev, [questionId.toString()]: answer }));
   };
   
   const handleNext = () => {
-    setCurrentQuestionIndex((prev) => (prev + 1) % questions.length);
+    setCurrentQuestionIndex((prev) => (prev + 1));
   };
 
   const handlePrev = () => {
-    setCurrentQuestionIndex((prev) => (prev - 1 + questions.length) % questions.length);
+    setCurrentQuestionIndex((prev) => (prev - 1));
   };
 
   const currentQuestion = questions[currentQuestionIndex];
-  const progress = (answeredCount / questions.length) * 100;
+  const progress = (Object.keys(selectedAnswers).length / questions.length) * 100;
   const minutes = Math.floor(timeLeft / 60);
   const seconds = timeLeft % 60;
+  const isLastQuestion = currentQuestionIndex === questions.length - 1;
 
   return (
     <div className="w-full max-w-3xl mx-auto">
@@ -153,43 +154,50 @@ export function QuizClient({ quiz, questions }: QuizClientProps) {
           <Progress value={progress} />
         </CardHeader>
         <CardContent>
-          <div key={currentQuestion.id} className="animate-in fade-in-50">
-            <p className="text-sm text-muted-foreground mb-2">Question {currentQuestionIndex + 1} ({currentQuestion.category})</p>
-            <h2 className="text-lg font-semibold mb-6">{currentQuestion.text}</h2>
-            <RadioGroup
-              onValueChange={(value) => handleSelectAnswer(currentQuestion.id, value)}
-              value={selectedAnswers[currentQuestion.id.toString()] || ''}
-            >
-              <div className="space-y-3">
-                {currentQuestion.options.map((option) => (
-                  <Label
-                    key={option}
-                    className={cn(
-                      "flex items-center gap-4 border rounded-lg p-4 cursor-pointer hover:bg-secondary/50 transition-colors",
-                      selectedAnswers[currentQuestion.id.toString()] === option && "border-primary bg-secondary"
-                    )}
-                  >
-                    <RadioGroupItem value={option} />
-                    <span>{option}</span>
-                  </Label>
-                ))}
-              </div>
-            </RadioGroup>
-          </div>
+          {currentQuestion && (
+            <div key={currentQuestion.id} className="animate-in fade-in-50">
+              <p className="text-sm text-muted-foreground mb-2">Question {currentQuestionIndex + 1} of {questions.length} ({currentQuestion.category})</p>
+              <h2 className="text-lg font-semibold mb-6">{currentQuestion.text}</h2>
+              <RadioGroup
+                onValueChange={(value) => handleSelectAnswer(currentQuestion.id, value)}
+                value={selectedAnswers[currentQuestion.id.toString()] || ''}
+              >
+                <div className="space-y-3">
+                  {currentQuestion.options.map((option) => (
+                    <Label
+                      key={option}
+                      className={cn(
+                        "flex items-center gap-4 border rounded-lg p-4 cursor-pointer hover:bg-secondary/50 transition-colors",
+                        selectedAnswers[currentQuestion.id.toString()] === option && "border-primary bg-secondary"
+                      )}
+                    >
+                      <RadioGroupItem value={option} />
+                      <span>{option}</span>
+                    </Label>
+                  ))}
+                </div>
+              </RadioGroup>
+            </div>
+          )}
         </CardContent>
         <CardFooter className="flex justify-between">
             <div className="flex gap-2">
                 <Button
                     variant="outline"
                     onClick={handlePrev}
+                    disabled={currentQuestionIndex === 0}
                 >
                     <ArrowLeft className="mr-2 h-4 w-4"/> Previous
                 </Button>
-                <Button onClick={handleNext}>
-                    Next <ArrowRight className="ml-2 h-4 w-4"/>
-                </Button>
+                {!isLastQuestion ? (
+                  <Button onClick={handleNext}>
+                      Next <ArrowRight className="ml-2 h-4 w-4"/>
+                  </Button>
+                ) : (
+                  <Button onClick={finishQuiz}>Finish Quiz</Button>
+                )}
             </div>
-            <Button onClick={finishQuiz} variant="destructive">Finish Quiz</Button>
+             <Button onClick={finishQuiz} variant="destructive">Finish Quiz</Button>
         </CardFooter>
       </Card>
       <AlertDialog open={showTimeoutAlert}>
