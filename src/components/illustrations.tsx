@@ -58,11 +58,12 @@ export function StudyingIllustration(props: SVGProps<SVGSVGElement>) {
             {/* Phone */}
             <rect x="35" y="65" width="45" height="70" rx="8" fill="hsl(var(--foreground) / 0.9)" />
             <rect x="38" y="68" width="39" height="64" rx="6" fill="hsl(var(--background))" />
+            
             {/* App Logo on Screen */}
-            <g transform="translate(45, 85) scale(1)">
-                <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" stroke="hsl(var(--primary))" fill="none" strokeWidth="1.2" />
-                <path d="m9 9.5 2 2 4-4" stroke="hsl(var(--accent))" strokeWidth="1.5" fill="none" />
-                <path d="m9 14.5 2 2 4-4" stroke="hsl(var(--accent))" strokeWidth="1.5" fill="none" />
+            <g transform="translate(45, 80) scale(0.8)">
+                <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" stroke="hsl(var(--primary))" fill="none" strokeWidth="1.5" />
+                 <text x="12" y="38" text-anchor="middle" font-size="8" font-weight="bold" fill="hsl(var(--primary))" font-family="sans-serif">Prep</text>
+                 <text x="12" y="48" text-anchor="middle" font-size="8" font-weight="bold" fill="hsl(var(--primary))" font-family="sans-serif">Quiz</text>
             </g>
           </g>
       </g>
