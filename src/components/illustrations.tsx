@@ -62,8 +62,8 @@ export function StudyingIllustration(props: SVGProps<SVGSVGElement>) {
             {/* App Logo on Screen */}
             <g transform="translate(45, 80) scale(0.8)">
                 <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" stroke="hsl(var(--primary))" fill="none" strokeWidth="1.5" />
-                 <text x="12" y="38" text-anchor="middle" font-size="8" font-weight="bold" fill="hsl(var(--primary))" font-family="sans-serif">Prep</text>
-                 <text x="12" y="48" text-anchor="middle" font-size="8" font-weight="bold" fill="hsl(var(--primary))" font-family="sans-serif">Quiz</text>
+                 <text x="12" y="38" textAnchor="middle" fontSize="8" fontWeight="bold" fill="hsl(var(--primary))" fontFamily="sans-serif">Prep</text>
+                 <text x="12" y="48" textAnchor="middle" fontSize="8" fontWeight="bold" fill="hsl(var(--primary))" fontFamily="sans-serif">Quiz</text>
             </g>
           </g>
       </g>
