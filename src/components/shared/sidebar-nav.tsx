@@ -27,16 +27,16 @@ export function SidebarNav() {
         const isActive = pathname === item.href;
         return (
           <SidebarMenuItem key={item.href}>
-            <Link href={item.href} passHref legacyBehavior>
+            <Link href={item.href} passHref>
               <SidebarMenuButton
                 asChild
                 isActive={isActive}
                 tooltip={{ children: item.label, side: 'right' }}
               >
-                <a>
+                <div>
                   <Icon />
                   <span>{item.label}</span>
-                </a>
+                </div>
               </SidebarMenuButton>
             </Link>
           </SidebarMenuItem>
