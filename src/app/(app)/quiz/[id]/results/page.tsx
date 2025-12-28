@@ -107,7 +107,7 @@ export default function ResultsPage() {
                 score: newTotalScore,
                 name: userProfile.name,
                 state: userProfile.state,
-                profileImageURL: userProfile.profileImageURL,
+                profileImageURL: userProfile.profileImageURL, // Use current profile URL
                 submissionDate: serverTimestamp(),
             }
             transaction.set(leaderboardRef, leaderboardEntry, { merge: true });

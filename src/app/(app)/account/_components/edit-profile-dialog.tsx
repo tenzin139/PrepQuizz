@@ -139,28 +139,38 @@ export function EditProfileDialog({ open, onOpenChange, userProfile }: EditProfi
 
     setIsSaving(true);
     try {
-      let photoURL = userProfile.profileImageURL;
+      let newPhotoURL = userProfile.profileImageURL;
 
       if (isPhotoRemoved) {
-        photoURL = '';
+        newPhotoURL = '';
       } else if (selectedFile) {
         const storage = getStorage();
         const filePath = `profile-images/${user.uid}/${Date.now()}-${selectedFile.name}`;
         const newPhotoRef = storageRef(storage, filePath);
         const snapshot = await uploadBytes(newPhotoRef, selectedFile);
-        photoURL = await getDownloadURL(snapshot.ref);
+        newPhotoURL = await getDownloadURL(snapshot.ref);
       }
       // Note: Capturing from camera is not implemented yet.
 
       const updates: Promise<any>[] = [];
+      
+      const hasProfileInfoChanged = name !== userProfile.name || newPhotoURL !== userProfile.profileImageURL;
 
-      // Only update if there are actual changes
-      if (name !== auth.currentUser.displayName || photoURL !== auth.currentUser.photoURL) {
-         updates.push(updateProfile(auth.currentUser, { displayName: name, photoURL }));
+      // Update Firebase Auth profile
+      if (name !== auth.currentUser.displayName || newPhotoURL !== auth.currentUser.photoURL) {
+         updates.push(updateProfile(auth.currentUser, { displayName: name, photoURL: newPhotoURL }));
       }
 
+      // Update Firestore user profile document
       const userDocRef = doc(firestore, 'users', user.uid);
-      updates.push(updateDoc(userDocRef, { name, profileImageURL: photoURL }));
+      const userDocUpdate: {name: string, profileImageURL: string} = { name, profileImageURL: newPhotoURL };
+      updates.push(updateDoc(userDocRef, userDocUpdate));
+      
+      // Update denormalized leaderboard entry if profile info changed
+      if (hasProfileInfoChanged) {
+        const leaderboardRef = doc(firestore, 'leaderboard_entries', user.uid);
+        updates.push(updateDoc(leaderboardRef, { name: name, profileImageURL: newPhotoURL }));
+      }
 
       await Promise.all(updates);
 
