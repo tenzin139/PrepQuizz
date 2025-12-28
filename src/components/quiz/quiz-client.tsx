@@ -73,7 +73,7 @@ export function QuizClient({ quiz, questions }: QuizClientProps) {
     for (const category in categoryTotals) {
         const questionsInCategoryAnswered = questions.filter(q => q.category === category && selectedAnswers[q.id.toString()]).length;
         if(questionsInCategoryAnswered > 0) {
-              finalCategoryScores[category] = (categoryScores[category] / questionsInCategoryAnswered) * 100;
+              finalCategoryScores[category] = (categoryScores[q.category] / questionsInCategoryAnswered) * 100;
         } else {
             finalCategoryScores[category] = 0;
         }
@@ -127,19 +127,18 @@ export function QuizClient({ quiz, questions }: QuizClientProps) {
   };
   
   const handleNext = () => {
-    setCurrentQuestionIndex((prev) => (prev + 1));
+    setCurrentQuestionIndex((prev) => (prev + 1) % questions.length);
   };
 
   const handlePrev = () => {
-    setCurrentQuestionIndex((prev) => (prev - 1));
+    setCurrentQuestionIndex((prev) => (prev - 1 + questions.length) % questions.length);
   };
 
   const currentQuestion = questions[currentQuestionIndex];
   const progress = (Object.keys(selectedAnswers).length / questions.length) * 100;
   const minutes = Math.floor(timeLeft / 60);
   const seconds = timeLeft % 60;
-  const isLastQuestion = currentQuestionIndex === questions.length - 1;
-
+  
   return (
     <div className="w-full max-w-3xl mx-auto">
       <Card>
@@ -185,17 +184,12 @@ export function QuizClient({ quiz, questions }: QuizClientProps) {
                 <Button
                     variant="outline"
                     onClick={handlePrev}
-                    disabled={currentQuestionIndex === 0}
                 >
                     <ArrowLeft className="mr-2 h-4 w-4"/> Previous
                 </Button>
-                {!isLastQuestion ? (
-                  <Button onClick={handleNext}>
-                      Next <ArrowRight className="ml-2 h-4 w-4"/>
-                  </Button>
-                ) : (
-                  <Button onClick={finishQuiz}>Finish Quiz</Button>
-                )}
+                <Button onClick={handleNext}>
+                    Next <ArrowRight className="ml-2 h-4 w-4"/>
+                </Button>
             </div>
              <Button onClick={finishQuiz} variant="destructive">Finish Quiz</Button>
         </CardFooter>
