@@ -14,14 +14,13 @@ import { Timestamp } from 'firebase/firestore';
 import { getPlaceholderImage } from '@/lib/placeholder-images';
 
 function HomeHero() {
-  const { user } = useUser();
   const heroImage = getPlaceholderImage('home-hero');
 
   return (
     <Card className="flex flex-col md:flex-row items-center overflow-hidden">
-        <div className="md:w-1/2 p-8">
+        <div className="md:w-1/2 p-8 text-center md:text-left">
             <h1 className="text-3xl font-bold mb-2">
-                Welcome back, {user?.displayName || 'Student'}!
+                Prepare With Us in a fun way
             </h1>
             <p className="text-muted-foreground mb-6">
                 Ready to ace your next exam? Start a new quiz or review your past performance.
