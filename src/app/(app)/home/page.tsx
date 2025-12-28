@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { PageHeader } from '@/components/shared/page-header';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, CheckCircle, XCircle, SkipForward } from 'lucide-react';
+import { ArrowRight, CheckCircle, XCircle, SkipForward, Star } from 'lucide-react';
 import { useUser, useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy, limit } from 'firebase/firestore';
 import type { QuizResult } from '@/lib/types';
@@ -14,6 +14,7 @@ import { Timestamp } from 'firebase/firestore';
 import { getPlaceholderImage } from '@/lib/placeholder-images';
 import { redirect } from 'next/navigation';
 import { useEffect } from 'react';
+import { cn } from '@/lib/utils';
 
 function HomeHero() {
   const heroImage = getPlaceholderImage('home-hero-real');
@@ -46,6 +47,46 @@ function HomeHero() {
   )
 }
 
+function ScoringRules() {
+    const rules = [
+        {
+            icon: CheckCircle,
+            title: "Correct Answer",
+            points: "+5",
+            color: "text-green-500",
+        },
+        {
+            icon: XCircle,
+            title: "Incorrect Answer",
+            points: "-2",
+            color: "text-red-500",
+        },
+        {
+            icon: SkipForward,
+            title: "Skipped Question",
+            points: "0",
+            color: "text-yellow-500",
+        }
+    ];
+
+    return (
+        <div>
+            <h2 className="text-2xl font-semibold tracking-tight mb-4 font-heading">Scoring Rules</h2>
+            <div className="grid gap-4 md:grid-cols-3">
+                {rules.map((rule, index) => (
+                     <Card key={index} className="relative overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
+                        <CardContent className="p-6 flex flex-col items-center text-center">
+                            <rule.icon className={cn("h-10 w-10 mb-3", rule.color)} />
+                            <p className="font-semibold text-lg">{rule.title}</p>
+                            <p className="text-2xl font-bold text-primary">{rule.points}</p>
+                            <p className="text-xs text-muted-foreground">points</p>
+                        </CardContent>
+                    </Card>
+                ))}
+            </div>
+        </div>
+    )
+}
 
 function PastQuizzes() {
   const { user } = useUser();
@@ -155,6 +196,7 @@ export default function HomePage() {
   return (
     <div className="animate-in fade-in-50 space-y-8">
       <HomeHero />
+      <ScoringRules />
       <div>
           <h2 className="text-2xl font-semibold tracking-tight mb-4 font-heading">Previous Quizzes</h2>
           <PastQuizzes />

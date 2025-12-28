@@ -172,14 +172,14 @@ export function QuizResults({ results, isReviewMode = false }: ResultsProps) {
                     <CheckCircle className="h-6 w-6 text-green-500" />
                     <div>
                         <p className="font-medium">Correct Answer</p>
-                        <p className="text-muted-foreground text-sm">+3 points</p>
+                        <p className="text-muted-foreground text-sm">+5 points</p>
                     </div>
                </div>
                 <div className="flex items-center gap-3">
                     <XCircle className="h-6 w-6 text-red-500" />
                     <div>
                         <p className="font-medium">Incorrect Answer</p>
-                        <p className="text-muted-foreground text-sm">-1 point</p>
+                        <p className="text-muted-foreground text-sm">-2 points</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-3">

@@ -32,7 +32,6 @@ type QuizClientProps = {
 
 export function QuizClient({ quiz, questions }: QuizClientProps) {
   const router = useRouter();
-  const [currentQuestionIndex, setCurrentQuestionIndex] = React.useState(0);
   const [currentQuestion, setCurrentQuestion] = React.useState<QuizQuestion>(questions[0]);
   const [answeredQuestions, setAnsweredQuestions] = React.useState<QuizQuestion[]>([]);
   const [selectedAnswers, setSelectedAnswers] = React.useState<Record<string, string>>({});
@@ -41,22 +40,25 @@ export function QuizClient({ quiz, questions }: QuizClientProps) {
   const [startTime] = React.useState(Date.now());
   const [showTimeoutAlert, setShowTimeoutAlert] = React.useState(false);
   const [currentScore, setCurrentScore] = React.useState(0);
+  const [skippedCount, setSkippedCount] = React.useState(0);
 
   const timerRef = React.useRef<NodeJS.Timeout | null>(null);
 
-  const calculateScore = React.useCallback((answers: Record<string, string>) => {
+  const calculateScore = React.useCallback((answers: Record<string, string>, skipped: number) => {
     let score = 0;
+    // Calculate score from answered questions
     Object.keys(answers).forEach((questionId) => {
         const question = answeredQuestions.find(q => q.id.toString() === questionId) || questions.find(q => q.id.toString() === questionId);
         if (question) {
             const userAnswer = answers[questionId];
             if (userAnswer === question.answer) {
-                score += 3;
+                score += 5; // Correct answer
             } else {
-                score -= 1;
+                score -= 2; // Incorrect answer
             }
         }
     });
+    
     return Math.max(0, score);
   }, [answeredQuestions, questions]);
   
@@ -96,13 +98,8 @@ export function QuizClient({ quiz, questions }: QuizClientProps) {
             }
         }
     });
-
-    // Handle skipped questions
-    const answeredIds = new Set(answeredQuestions.map(q => q.id.toString()));
-    const allAttemptedIds = new Set(Object.keys(selectedAnswers));
-    const skippedQuestionsCount = allAttemptedIds.size - answeredIds.size;
-
-    const finalScore = calculateScore(selectedAnswers);
+    
+    const finalScore = calculateScore(selectedAnswers, skippedCount);
     const completionTime = (Date.now() - startTime) / 1000;
     
     const finalCategoryScores: Record<string, number> = {};
@@ -122,7 +119,7 @@ export function QuizClient({ quiz, questions }: QuizClientProps) {
         score: finalScore,
         correctAnswers: correctAnswersCount,
         incorrectAnswers: incorrectAnswersCount,
-        skippedQuestions: skippedQuestionsCount,
+        skippedQuestions: skippedCount,
         totalQuestions: answeredQuestions.length,
         categoryScores: finalCategoryScores,
         incorrectQuestions: incorrectQuestionsList,
@@ -133,7 +130,7 @@ export function QuizClient({ quiz, questions }: QuizClientProps) {
     
     sessionStorage.setItem('quizResults', JSON.stringify(results));
     router.push(`/quiz/${quiz.id}/results`);
-  }, [selectedAnswers, answeredQuestions, quiz.id, quiz.title, router, calculateScore, startTime, questions]);
+  }, [selectedAnswers, answeredQuestions, quiz.id, quiz.title, router, calculateScore, startTime, questions, skippedCount]);
 
 
   React.useEffect(() => {
@@ -162,7 +159,7 @@ export function QuizClient({ quiz, questions }: QuizClientProps) {
     if (!answeredQuestions.find(q => q.id === questionId)) {
         setAnsweredQuestions(prev => [...prev, currentQuestion]);
     }
-    setCurrentScore(calculateScore(newAnswers));
+    setCurrentScore(calculateScore(newAnswers, skippedCount));
     setIsAnswered(true);
   };
   
@@ -179,7 +176,7 @@ export function QuizClient({ quiz, questions }: QuizClientProps) {
 
   const handleSkip = () => {
     if (isAnswered) return;
-    // Don't add to answered questions if skipped
+    setSkippedCount(prev => prev + 1);
     getNextQuestion();
   }
 
@@ -205,15 +202,15 @@ export function QuizClient({ quiz, questions }: QuizClientProps) {
                     </TooltipTrigger>
                     <TooltipContent>
                         <p className="text-sm">
-                            Correct: +3 points<br/>
-                            Incorrect: -1 point
+                            Correct: +5 points<br/>
+                            Incorrect: -2 points
                         </p>
                     </TooltipContent>
                 </Tooltip>
               </div>
               <div className="flex items-center gap-2 font-semibold text-accent text-lg">
                 <Clock className="h-6 w-6" />
-                <span>{String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}</span>
+                <span className="text-2xl">{String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}</span>
               </div>
             </div>
           </div>
@@ -260,7 +257,7 @@ export function QuizClient({ quiz, questions }: QuizClientProps) {
                 <Button onClick={handleNext}>
                     Next <ArrowRight className="ml-2 h-4 w-4"/>
                 </Button>
-                <Button variant="outline" onClick={handleSkip} disabled={isAnswered}>
+                <Button variant="outline" onClick={handleSkip} disabled={isAnswered} className="border-2">
                     Skip <SkipForward className="ml-2 h-4 w-4"/>
                 </Button>
             </div>
