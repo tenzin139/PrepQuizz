@@ -3,9 +3,14 @@ import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { FirebaseClientProvider } from '@/firebase';
 import { cn } from '@/lib/utils';
-import { Inter } from 'next/font/google';
+import { Inter, Poppins } from 'next/font/google';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
+const poppins = Poppins({ 
+  subsets: ['latin'], 
+  variable: '--font-heading',
+  weight: ['400', '600', '700', '800']
+});
 
 export const metadata: Metadata = {
   title: 'Prep Quiz',
@@ -18,7 +23,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning className={cn(inter.variable)}>
+    <html lang="en" suppressHydrationWarning className={cn(inter.variable, poppins.variable)}>
       <body className="font-sans antialiased">
         <FirebaseClientProvider>
           {children}

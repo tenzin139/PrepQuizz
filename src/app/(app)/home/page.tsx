@@ -12,12 +12,14 @@ import type { QuizResult } from '@/lib/types';
 import { format } from 'date-fns';
 import { Timestamp } from 'firebase/firestore';
 import { StudyingIllustration } from '@/components/illustrations';
+import { redirect } from 'next/navigation';
+import { useEffect } from 'react';
 
 function HomeHero() {
   return (
     <Card className="flex flex-col md:flex-row items-center overflow-hidden">
         <div className="md:w-1/2 p-8 text-center md:text-left">
-            <h1 className="text-3xl font-bold mb-2">
+            <h1 className="text-3xl font-bold mb-2 font-heading">
                 Prepare With Us in a fun way
             </h1>
             <p className="text-muted-foreground mb-6">
@@ -94,7 +96,7 @@ function PastQuizzes() {
       {pastQuizzes.map((quiz) => (
         <Card key={quiz.id} className="flex flex-col">
           <CardHeader>
-            <CardTitle>{quiz.quizTitle}</CardTitle>
+            <CardTitle className="font-heading">{quiz.quizTitle}</CardTitle>
             <CardDescription>
               Taken on {formatDate(quiz.completionDate)}
             </CardDescription>
@@ -124,13 +126,27 @@ function PastQuizzes() {
 
 
 export default function HomePage() {
-  const { user } = useUser();
+    const { user, isUserLoading } = useUser();
+
+    useEffect(() => {
+        if (!isUserLoading && !user) {
+        redirect('/login');
+        }
+    }, [user, isUserLoading]);
+
+    if (isUserLoading) {
+        return (
+        <div className="flex h-screen items-center justify-center">
+            <p>Loading...</p>
+        </div>
+        );
+    }
   
   return (
     <div className="animate-in fade-in-50 space-y-8">
       <HomeHero />
       <div>
-          <h2 className="text-2xl font-semibold tracking-tight mb-4">Previous Quizzes</h2>
+          <h2 className="text-2xl font-semibold tracking-tight mb-4 font-heading">Previous Quizzes</h2>
           <PastQuizzes />
       </div>
     </div>
