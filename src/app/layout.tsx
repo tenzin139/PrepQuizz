@@ -2,9 +2,10 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { FirebaseClientProvider } from '@/firebase';
-import { GeistSans } from 'geist/font/sans';
-import { GeistMono } from 'geist/font/mono';
 import { cn } from '@/lib/utils';
+import { Inter } from 'next/font/google';
+
+const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 
 export const metadata: Metadata = {
   title: 'UPSC NEET Prep',
@@ -17,7 +18,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning className={cn(GeistSans.variable, GeistMono.variable)}>
+    <html lang="en" suppressHydrationWarning className={cn(inter.variable)}>
       <body className="font-sans antialiased">
         <FirebaseClientProvider>
           {children}
