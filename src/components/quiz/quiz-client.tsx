@@ -10,6 +10,15 @@ import { Label } from '@/components/ui/label';
 import { Clock, ArrowRight, ArrowLeft } from 'lucide-react';
 import type { Quiz, QuizQuestion } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 type QuizClientProps = {
   quiz: Quiz;
@@ -19,52 +28,60 @@ type QuizClientProps = {
 export function QuizClient({ quiz, questions }: QuizClientProps) {
   const router = useRouter();
   const [currentQuestionIndex, setCurrentQuestionIndex] = React.useState(0);
-  const [selectedAnswers, setSelectedAnswers] = React.useState<Record<number, string>>({});
-  const [timeLeft, setTimeLeft] = React.useState(quiz.duration);
+  const [selectedAnswers, setSelectedAnswers] = React.useState<Record<string, string>>({});
+  const [timeLeft, setTimeLeft] = React.useState(120); // 2 minutes
+  const [showTimeoutAlert, setShowTimeoutAlert] = React.useState(false);
+  const [answeredCount, setAnsweredCount] = React.useState(0);
 
-  React.useEffect(() => {
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          finishQuiz();
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
+  const timerRef = React.useRef<NodeJS.Timeout | null>(null);
 
-    return () => clearInterval(timer);
-  }, []);
-
-  const finishQuiz = () => {
+  const finishQuiz = React.useCallback(() => {
+    if (timerRef.current) {
+        clearInterval(timerRef.current);
+    }
+    
     let correctAnswers = 0;
     let incorrectAnswers = 0;
     const categoryScores: Record<string, number> = {};
     const categoryTotals: Record<string, number> = {};
+    const answeredQuestionIds = Object.keys(selectedAnswers);
 
     questions.forEach((q) => {
-      if (!categoryTotals[q.category]) {
-        categoryTotals[q.category] = 0;
-        categoryScores[q.category] = 0;
-      }
-      categoryTotals[q.category]++;
-      
-      const selected = selectedAnswers[q.id];
-      if (selected === q.answer) {
-        correctAnswers++;
-        categoryScores[q.category]++;
-      } else if (selected) {
-        incorrectAnswers++;
-      }
+        if (!categoryTotals[q.category]) {
+            categoryTotals[q.category] = 0;
+            categoryScores[q.category] = 0;
+        }
+        categoryTotals[q.category]++;
     });
 
-    const skippedQuestions = questions.length - correctAnswers - incorrectAnswers;
+    answeredQuestionIds.forEach(questionId => {
+        const question = questions.find(q => q.id.toString() === questionId);
+        if (question) {
+            const selected = selectedAnswers[questionId];
+            if (selected === question.answer) {
+                correctAnswers++;
+                categoryScores[question.category] = (categoryScores[question.category] || 0) + 1;
+            } else {
+                incorrectAnswers++;
+            }
+        }
+    });
+
+    const skippedQuestions = answeredCount - correctAnswers - incorrectAnswers;
     const finalScore = (correctAnswers * 3) - (incorrectAnswers * 5) - (skippedQuestions * 1);
     
     const finalCategoryScores: Record<string, number> = {};
     for (const category in categoryTotals) {
-        finalCategoryScores[category] = (categoryScores[category] / categoryTotals[category]) * 100;
+        if (categoryScores[category]) {
+            const questionsInCategoryAnswered = questions.filter(q => q.category === category && answeredQuestionIds.includes(q.id.toString())).length;
+            if(questionsInCategoryAnswered > 0) {
+                 finalCategoryScores[category] = (categoryScores[category] / questionsInCategoryAnswered) * 100;
+            } else {
+                finalCategoryScores[category] = 0;
+            }
+        } else {
+             finalCategoryScores[category] = 0;
+        }
     }
 
     const results = {
@@ -72,21 +89,53 @@ export function QuizClient({ quiz, questions }: QuizClientProps) {
         correctAnswers,
         incorrectAnswers,
         skippedQuestions,
-        totalQuestions: questions.length,
+        totalQuestions: answeredCount,
         categoryScores: JSON.stringify(finalCategoryScores),
         quizId: quiz.id
     };
     
     const params = new URLSearchParams(Object.entries(results).map(([k, v]) => [k, String(v)]));
     router.push(`/quiz/${quiz.id}/results?${params.toString()}`);
-  };
+  }, [selectedAnswers, questions, quiz.id, router, answeredCount]);
+
+
+  React.useEffect(() => {
+    timerRef.current = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          if(timerRef.current) clearInterval(timerRef.current);
+          setShowTimeoutAlert(true);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => {
+        if (timerRef.current) {
+            clearInterval(timerRef.current);
+        }
+    };
+  }, []);
 
   const handleSelectAnswer = (questionId: number, answer: string) => {
-    setSelectedAnswers((prev) => ({ ...prev, [questionId]: answer }));
+    const questionIdStr = questionId.toString();
+    if (!selectedAnswers[questionIdStr]) {
+        setAnsweredCount(prev => prev + 1);
+    }
+    setSelectedAnswers((prev) => ({ ...prev, [questionIdStr]: answer }));
+  };
+  
+  const handleNext = () => {
+    setCurrentQuestionIndex((prev) => (prev + 1) % questions.length);
+  };
+
+  const handlePrev = () => {
+    setCurrentQuestionIndex((prev) => (prev - 1 + questions.length) % questions.length);
   };
 
   const currentQuestion = questions[currentQuestionIndex];
-  const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
+  const progress = (answeredCount / questions.length) * 100;
   const minutes = Math.floor(timeLeft / 60);
   const seconds = timeLeft % 60;
 
@@ -105,11 +154,11 @@ export function QuizClient({ quiz, questions }: QuizClientProps) {
         </CardHeader>
         <CardContent>
           <div key={currentQuestion.id} className="animate-in fade-in-50">
-            <p className="text-sm text-muted-foreground mb-2">Question {currentQuestionIndex + 1} of {questions.length} ({currentQuestion.category})</p>
+            <p className="text-sm text-muted-foreground mb-2">Question {currentQuestionIndex + 1} ({currentQuestion.category})</p>
             <h2 className="text-lg font-semibold mb-6">{currentQuestion.text}</h2>
             <RadioGroup
               onValueChange={(value) => handleSelectAnswer(currentQuestion.id, value)}
-              value={selectedAnswers[currentQuestion.id] || ''}
+              value={selectedAnswers[currentQuestion.id.toString()] || ''}
             >
               <div className="space-y-3">
                 {currentQuestion.options.map((option) => (
@@ -117,7 +166,7 @@ export function QuizClient({ quiz, questions }: QuizClientProps) {
                     key={option}
                     className={cn(
                       "flex items-center gap-4 border rounded-lg p-4 cursor-pointer hover:bg-secondary/50 transition-colors",
-                      selectedAnswers[currentQuestion.id] === option && "border-primary bg-secondary"
+                      selectedAnswers[currentQuestion.id.toString()] === option && "border-primary bg-secondary"
                     )}
                   >
                     <RadioGroupItem value={option} />
@@ -129,22 +178,33 @@ export function QuizClient({ quiz, questions }: QuizClientProps) {
           </div>
         </CardContent>
         <CardFooter className="flex justify-between">
-          <Button
-            variant="outline"
-            onClick={() => setCurrentQuestionIndex((prev) => Math.max(0, prev - 1))}
-            disabled={currentQuestionIndex === 0}
-          >
-            <ArrowLeft className="mr-2 h-4 w-4"/> Previous
-          </Button>
-          {currentQuestionIndex < questions.length - 1 ? (
-            <Button onClick={() => setCurrentQuestionIndex((prev) => Math.min(questions.length - 1, prev + 1))}>
-              Next <ArrowRight className="ml-2 h-4 w-4"/>
-            </Button>
-          ) : (
-            <Button onClick={finishQuiz} className="bg-green-600 hover:bg-green-700">Finish Quiz</Button>
-          )}
+            <div className="flex gap-2">
+                <Button
+                    variant="outline"
+                    onClick={handlePrev}
+                >
+                    <ArrowLeft className="mr-2 h-4 w-4"/> Previous
+                </Button>
+                <Button onClick={handleNext}>
+                    Next <ArrowRight className="ml-2 h-4 w-4"/>
+                </Button>
+            </div>
+            <Button onClick={finishQuiz} variant="destructive">Finish Quiz</Button>
         </CardFooter>
       </Card>
+      <AlertDialog open={showTimeoutAlert}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+            <AlertDialogTitle>Time's up!</AlertDialogTitle>
+            <AlertDialogDescription>
+                Your time for the quiz has expired. Let's see how you did.
+            </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+            <AlertDialogAction onClick={finishQuiz}>View Results</AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
