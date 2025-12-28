@@ -23,7 +23,7 @@ export const Quizzes: Quiz[] = [
   {
     id: 'upsc-gs-1',
     title: 'UPSC General Studies Mix',
-    description: 'A mixed quiz covering all topics from UPSC General Studies.',
+    description: 'A 2-minute challenge to test your knowledge across all UPSC topics.',
     category: 'Mixed',
     questionsCount: 10,
     duration: 120, // in seconds
@@ -33,7 +33,7 @@ export const Quizzes: Quiz[] = [
   {
     id: 'neet-bio-1',
     title: 'NEET Biology Practice',
-    description: 'Test your knowledge in key areas of Biology for NEET.',
+    description: 'A 2-minute challenge to test your knowledge in key areas of Biology for NEET.',
     category: 'Science',
     questionsCount: 10,
     duration: 120,

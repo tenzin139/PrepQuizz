@@ -5,7 +5,7 @@ import { getAIFeedback } from '@/lib/actions';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { BarChart, Lightbulb, CheckCircle, XCircle, SkipForward, ExternalLink, HelpCircle } from 'lucide-react';
+import { BarChart, Lightbulb, CheckCircle, XCircle, SkipForward, ExternalLink, HelpCircle, Star, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 import {
   ChartContainer,
@@ -161,27 +161,58 @@ export function QuizResults({ results, isReviewMode = false }: ResultsProps) {
         </Card>
       )}
 
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <Lightbulb className="h-6 w-6 text-accent"/>
-            <CardTitle>AI-Powered Analysis</CardTitle>
-          </div>
-          <CardDescription>Personalized feedback to help you improve.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {loadingFeedback ? (
-            <div className="space-y-2">
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-4 w-3/4" />
+      <div className="grid md:grid-cols-2 gap-6">
+         <Card>
+            <CardHeader>
+              <CardTitle>Scoring Rules</CardTitle>
+              <CardDescription>How your score was calculated.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+               <div className="flex items-center gap-3">
+                    <CheckCircle className="h-6 w-6 text-green-500" />
+                    <div>
+                        <p className="font-medium">Correct Answer</p>
+                        <p className="text-muted-foreground text-sm">+3 points</p>
+                    </div>
+               </div>
+                <div className="flex items-center gap-3">
+                    <XCircle className="h-6 w-6 text-red-500" />
+                    <div>
+                        <p className="font-medium">Incorrect Answer</p>
+                        <p className="text-muted-foreground text-sm">-1 point</p>
+                    </div>
+                </div>
+                <div className="flex items-center gap-3">
+                    <SkipForward className="h-6 w-6 text-yellow-500" />
+                    <div>
+                        <p className="font-medium">Skipped Question</p>
+                        <p className="text-muted-foreground text-sm">0 points</p>
+                    </div>
+                </div>
+            </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Lightbulb className="h-6 w-6 text-accent"/>
+              <CardTitle>AI-Powered Analysis</CardTitle>
             </div>
-          ) : errorFeedback ? (
-             <p className="text-destructive">{errorFeedback}</p>
-          ) : (
-             <p className="text-foreground/90">{aiFeedback?.overallFeedback}</p>
-          )}
-        </CardContent>
-      </Card>
+            <CardDescription>Personalized feedback to help you improve.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {loadingFeedback ? (
+              <div className="space-y-2">
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-3/4" />
+              </div>
+            ) : errorFeedback ? (
+               <p className="text-destructive">{errorFeedback}</p>
+            ) : (
+               <p className="text-foreground/90">{aiFeedback?.overallFeedback}</p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
       
       <div className="grid md:grid-cols-2 gap-6">
         <Card>
