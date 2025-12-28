@@ -58,6 +58,8 @@ export function QuizClient({ quiz, questions }: QuizClientProps) {
             }
         }
     });
+
+    score -= skipped;
     
     return Math.max(0, score);
   }, [answeredQuestions, questions]);
@@ -130,7 +132,7 @@ export function QuizClient({ quiz, questions }: QuizClientProps) {
     
     sessionStorage.setItem('quizResults', JSON.stringify(results));
     router.push(`/quiz/${quiz.id}/results`);
-  }, [selectedAnswers, answeredQuestions, quiz.id, quiz.title, router, calculateScore, startTime, questions, skippedCount]);
+  }, [selectedAnswers, skippedCount, answeredQuestions, quiz.id, quiz.title, router, calculateScore, startTime, questions]);
 
 
   React.useEffect(() => {
@@ -177,6 +179,7 @@ export function QuizClient({ quiz, questions }: QuizClientProps) {
   const handleSkip = () => {
     if (isAnswered) return;
     setSkippedCount(prev => prev + 1);
+    setCurrentScore(calculateScore(selectedAnswers, skippedCount + 1));
     getNextQuestion();
   }
 
@@ -203,7 +206,8 @@ export function QuizClient({ quiz, questions }: QuizClientProps) {
                     <TooltipContent>
                         <p className="text-sm">
                             Correct: +5 points<br/>
-                            Incorrect: -2 points
+                            Incorrect: -2 points<br/>
+                            Skipped: -1 point
                         </p>
                     </TooltipContent>
                 </Tooltip>

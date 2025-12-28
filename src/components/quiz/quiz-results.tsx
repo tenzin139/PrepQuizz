@@ -186,7 +186,7 @@ export function QuizResults({ results, isReviewMode = false }: ResultsProps) {
                     <SkipForward className="h-6 w-6 text-yellow-500" />
                     <div>
                         <p className="font-medium">Skipped Question</p>
-                        <p className="text-muted-foreground text-sm">0 points</p>
+                        <p className="text-muted-foreground text-sm">-1 point</p>
                     </div>
                 </div>
             </CardContent>

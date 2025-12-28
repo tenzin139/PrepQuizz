@@ -64,7 +64,7 @@ function ScoringRules() {
         {
             icon: SkipForward,
             title: "Skipped Question",
-            points: "0",
+            points: "-1",
             color: "text-yellow-500",
         }
     ];
