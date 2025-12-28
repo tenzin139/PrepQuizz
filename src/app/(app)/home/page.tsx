@@ -138,10 +138,6 @@ export default function HomePage() {
   
   return (
     <div className="animate-in fade-in-50 space-y-8">
-       <PageHeader
-        title={user ? `Welcome back, ${user.displayName || 'Student'}!` : 'Welcome!'}
-        description="Here's a summary of your recent activity. Keep up the great work!"
-      />
       <HomeHero />
       <div>
           <h2 className="text-2xl font-semibold tracking-tight mb-4">Previous Quizzes</h2>
