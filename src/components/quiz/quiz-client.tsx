@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { Clock, ArrowRight, ArrowLeft, SkipForward, Star } from 'lucide-react';
+import { Clock, ArrowRight, ArrowLeft, SkipForward, Star, Info, CheckCircle, XCircle } from 'lucide-react';
 import type { Quiz, QuizQuestion } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import {
@@ -19,6 +19,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 type QuizClientProps = {
   quiz: Quiz;
@@ -29,6 +35,7 @@ export function QuizClient({ quiz, questions }: QuizClientProps) {
   const router = useRouter();
   const [currentQuestionIndex, setCurrentQuestionIndex] = React.useState(0);
   const [selectedAnswers, setSelectedAnswers] = React.useState<Record<string, string>>({});
+  const [isAnswered, setIsAnswered] = React.useState(false);
   const [timeLeft, setTimeLeft] = React.useState(120); // 2 minutes
   const [showTimeoutAlert, setShowTimeoutAlert] = React.useState(false);
   const [currentScore, setCurrentScore] = React.useState(0);
@@ -141,21 +148,25 @@ export function QuizClient({ quiz, questions }: QuizClientProps) {
   }, []);
 
   const handleSelectAnswer = (questionId: number, answer: string) => {
+    if (isAnswered) return;
     const newAnswers = { ...selectedAnswers, [questionId.toString()]: answer };
     setSelectedAnswers(newAnswers);
     setCurrentScore(calculateScore(newAnswers));
+    setIsAnswered(true);
   };
   
   const handleNext = () => {
+    setIsAnswered(false);
     setCurrentQuestionIndex((prev) => (prev + 1) % questions.length);
   };
 
   const handlePrev = () => {
+    setIsAnswered(Object.keys(selectedAnswers).includes(questions[(currentQuestionIndex - 1 + questions.length) % questions.length].id.toString()));
     setCurrentQuestionIndex((prev) => (prev - 1 + questions.length) % questions.length);
   };
   
   const handleSkip = () => {
-    // Just move to the next question without selecting an answer.
+    setIsAnswered(false);
     handleNext();
   }
 
@@ -164,16 +175,30 @@ export function QuizClient({ quiz, questions }: QuizClientProps) {
   const minutes = Math.floor(timeLeft / 60);
   const seconds = timeLeft % 60;
   
+  const selectedOption = selectedAnswers[currentQuestion.id.toString()];
+  
   return (
     <div className="w-full max-w-3xl mx-auto">
+       <TooltipProvider>
       <Card>
         <CardHeader>
           <div className="flex justify-between items-center mb-4">
             <CardTitle className="text-2xl">{quiz.title}</CardTitle>
             <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 font-semibold text-primary">
-                <Star className="h-5 w-5" />
+              <div className="flex items-center gap-2 font-semibold">
+                <Star className="h-5 w-5 text-primary" />
                 <span>{currentScore}</span>
+                 <Tooltip>
+                    <TooltipTrigger asChild>
+                        <button><Info className="h-4 w-4 text-muted-foreground" /></button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        <p className="text-sm">
+                            Correct: +3 points<br/>
+                            Incorrect: -1 point
+                        </p>
+                    </TooltipContent>
+                </Tooltip>
               </div>
               <div className="flex items-center gap-2 font-semibold text-accent">
                 <Clock className="h-5 w-5" />
@@ -190,21 +215,31 @@ export function QuizClient({ quiz, questions }: QuizClientProps) {
               <h2 className="text-lg font-semibold mb-6">{currentQuestion.text}</h2>
               <RadioGroup
                 onValueChange={(value) => handleSelectAnswer(currentQuestion.id, value)}
-                value={selectedAnswers[currentQuestion.id.toString()] || ''}
+                value={selectedOption}
+                disabled={isAnswered}
               >
                 <div className="space-y-3">
-                  {currentQuestion.options.map((option) => (
-                    <Label
-                      key={option}
-                      className={cn(
-                        "flex items-center gap-4 border rounded-lg p-4 cursor-pointer hover:bg-secondary/50 transition-colors",
-                        selectedAnswers[currentQuestion.id.toString()] === option && "border-primary bg-secondary"
-                      )}
-                    >
-                      <RadioGroupItem value={option} />
-                      <span>{option}</span>
-                    </Label>
-                  ))}
+                  {currentQuestion.options.map((option) => {
+                    const isSelected = selectedOption === option;
+                    const isCorrect = currentQuestion.answer === option;
+
+                    return (
+                        <Label
+                        key={option}
+                        className={cn(
+                            "flex items-center gap-4 border rounded-lg p-4 cursor-pointer hover:bg-secondary/50 transition-colors",
+                             isAnswered && isCorrect && "border-green-500 bg-green-500/10 text-green-700",
+                             isAnswered && isSelected && !isCorrect && "border-red-500 bg-red-500/10 text-red-700",
+                             isAnswered && !isSelected && "opacity-60"
+                        )}
+                        >
+                        <RadioGroupItem value={option} />
+                        <span>{option}</span>
+                         {isAnswered && isCorrect && <CheckCircle className="ml-auto h-5 w-5 text-green-500" />}
+                         {isAnswered && isSelected && !isCorrect && <XCircle className="ml-auto h-5 w-5 text-red-500" />}
+                        </Label>
+                    )
+                  })}
                 </div>
               </RadioGroup>
             </div>
@@ -212,7 +247,7 @@ export function QuizClient({ quiz, questions }: QuizClientProps) {
         </CardContent>
         <CardFooter className="flex justify-between">
             <div className="flex gap-2">
-                <Button variant="outline" onClick={handlePrev}>
+                <Button variant="outline" onClick={handlePrev} disabled={currentQuestionIndex === 0}>
                     <ArrowLeft className="mr-2 h-4 w-4"/> Previous
                 </Button>
                 <Button onClick={handleNext}>
@@ -225,6 +260,7 @@ export function QuizClient({ quiz, questions }: QuizClientProps) {
              <Button onClick={finishQuiz} variant="destructive">Finish Quiz</Button>
         </CardFooter>
       </Card>
+      </TooltipProvider>
       <AlertDialog open={showTimeoutAlert}>
         <AlertDialogContent>
             <AlertDialogHeader>
