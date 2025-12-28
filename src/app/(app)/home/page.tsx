@@ -11,11 +11,13 @@ import { collection, query, orderBy, limit } from 'firebase/firestore';
 import type { QuizResult } from '@/lib/types';
 import { format } from 'date-fns';
 import { Timestamp } from 'firebase/firestore';
-import { StudyingIllustration } from '@/components/illustrations';
+import { getPlaceholderImage } from '@/lib/placeholder-images';
 import { redirect } from 'next/navigation';
 import { useEffect } from 'react';
 
 function HomeHero() {
+  const heroImage = getPlaceholderImage('home-hero-real');
+
   return (
     <Card className="flex flex-col md:flex-row items-center overflow-hidden">
         <div className="md:w-1/2 p-8 text-center md:text-left">
@@ -29,8 +31,16 @@ function HomeHero() {
                 <Link href="/quiz">Start New Quiz</Link>
             </Button>
         </div>
-        <div className="md:w-1/2 p-8 h-64 md:h-auto w-full flex items-center justify-center bg-secondary/50">
-            <StudyingIllustration className="w-full h-full" />
+        <div className="md:w-1/2 relative h-64 md:h-80 w-full">
+            {heroImage && (
+                <Image
+                    src={heroImage.imageUrl}
+                    alt={heroImage.description}
+                    fill
+                    className="object-cover"
+                    data-ai-hint={heroImage.imageHint}
+                />
+            )}
         </div>
     </Card>
   )
