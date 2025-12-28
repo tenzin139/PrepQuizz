@@ -5,44 +5,48 @@ export function StudyingIllustration(props: SVGProps<SVGSVGElement>) {
     <svg
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 200 150"
-      aria-labelledby="studying-illustration-title"
+      aria-labelledby="student-with-phone-title"
       role="img"
       {...props}
     >
-      <title id="studying-illustration-title">Illustration of a person studying on a large pile of books.</title>
+      <title id="student-with-phone-title">Illustration of a cartoon student holding a phone with the Prep Quiz app.</title>
       
       {/* Background elements */}
-      <circle cx="40" cy="40" r="10" fill="hsl(var(--accent) / 0.5)" />
-      <circle cx="160" cy="110" r="15" fill="hsl(var(--primary) / 0.2)" />
-      <rect x="150" y="20" width="20" height="20" rx="5" fill="hsl(var(--accent) / 0.3)" transform="rotate(25 160 30)" />
+      <circle cx="25" cy="50" r="12" fill="hsl(var(--primary) / 0.2)" />
+      <rect x="160" y="80" width="25" height="25" rx="5" fill="hsl(var(--accent) / 0.4)" transform="rotate(-15 172.5 92.5)" />
+      <path d="M 150,20 L 160,30 L 150,40 Z" fill="hsl(var(--primary) / 0.3)" />
 
-      {/* Pile of books */}
+      {/* Student */}
       <g>
-        <rect x="20" y="130" width="160" height="15" rx="3" fill="hsl(var(--primary) / 0.8)" />
-        <rect x="25" y="110" width="150" height="20" rx="3" fill="hsl(var(--secondary-foreground) / 0.8)" />
-        <rect x="30" y="95" width="140" height="15" rx="3" fill="hsl(var(--primary) / 0.6)" />
-        <rect x="35" y="80" width="130" height="15" rx="3" fill="hsl(var(--secondary-foreground) / 0.6)" />
-      </g>
-      
-      {/* Person */}
-      <g transform="translate(0, -10)">
-        {/* Body */}
-        <path d="M85,45 Q100,40 115,45 L120,85 L80,85 Z" fill="hsl(var(--accent))" />
         {/* Head */}
-        <circle cx="100" cy="30" r="15" fill="hsl(var(--foreground) / 0.8)" />
-         {/* Hair */}
-        <path d="M 88,20 C 85,10, 115,10, 112,20 C 115,25, 85,25, 88,20 Z" fill="hsl(var(--foreground))" />
+        <circle cx="100" cy="50" r="20" fill="hsl(var(--accent) / 0.8)" />
+        {/* Hair */}
+        <path d="M 85,35 C 80,20 120,20 115,35 Q 100,40 85,35 Z" fill="hsl(var(--foreground) / 0.8)" />
+        {/* Eyes */}
+        <circle cx="93" cy="50" r="2" fill="hsl(var(--foreground))" />
+        <circle cx="107" cy="50" r="2" fill="hsl(var(--foreground))" />
+        {/* Smile */}
+        <path d="M 95 60 Q 100 65 105 60" stroke="hsl(var(--foreground))" strokeWidth="1.5" fill="none" />
+        
+        {/* Body */}
+        <rect x="80" y="70" width="40" height="50" rx="10" fill="hsl(var(--primary))" />
+        {/* Arm holding phone */}
+        <rect x="65" y="75" width="30" height="15" rx="7.5" fill="hsl(var(--primary))" />
       </g>
-      
-      {/* Open Book on lap */}
-      <g transform="translate(75, 65) rotate(5 100 80)">
-        <path d="M0,0 C10,-5, 20,-5, 30,0 L30,20 L0,20 Z" fill="#fff" stroke="hsl(var(--border))" strokeWidth="1"/>
-        <path d="M30,0 C40,-5, 50,-5, 60,0 L60,20 L30,20 Z" fill="#fff" stroke="hsl(var(--border))" strokeWidth="1"/>
-        {/* Book lines */}
-        <line x1="5" y1="5" x2="25" y2="5" stroke="hsl(var(--muted-foreground))" strokeWidth="0.5" />
-        <line x1="5" y1="10" x2="25" y2="10" stroke="hsl(var(--muted-foreground))" strokeWidth="0.5" />
-        <line x1="35" y1="5" x2="55" y2="5" stroke="hsl(var(--muted-foreground))" strokeWidth="0.5" />
-        <line x1="35" y1="10" x2="55" y2="10" stroke="hsl(var(--muted-foreground))" strokeWidth="0.5" />
+
+      {/* Phone */}
+      <g transform="translate(45 80)">
+        {/* Phone Case */}
+        <rect x="0" y="0" width="35" height="60" rx="5" fill="hsl(var(--foreground) / 0.7)" />
+        {/* Phone Screen */}
+        <rect x="2.5" y="2.5" width="30" height="55" rx="3" fill="hsl(var(--background))" />
+        
+        {/* App Logo on Screen */}
+        <g transform="translate(7, 15) scale(0.8)">
+            <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" stroke="hsl(var(--primary))" fill="none" strokeWidth="1.5" />
+            <path d="m9 9.5 2 2 4-4" stroke="hsl(var(--accent))" strokeWidth="2" />
+            <path d="m9 14.5 2 2 4-4" stroke="hsl(var(--accent))" strokeWidth="2" />
+        </g>
       </g>
     </svg>
   );
