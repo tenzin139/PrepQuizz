@@ -129,56 +129,37 @@ export function QuizResults({ results, isReviewMode = false }: ResultsProps) {
 
   return (
     <div className="space-y-6 animate-in fade-in-50">
-       {!isReviewMode && (
-         <Card className="text-center">
-            <CardHeader>
-              <CardTitle className="text-2xl">Quiz Complete!</CardTitle>
-              <CardDescription>Your final score is</CardDescription>
-            </CardHeader>
-            <CardContent>
+      {!isReviewMode && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-2xl">Quiz Complete!</CardTitle>
+            <CardDescription>Here's a summary of your performance.</CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col md:flex-row items-center justify-around gap-6 text-center">
+            <div>
+              <p className="text-sm text-muted-foreground">Your Score</p>
               <p className="font-bold text-6xl text-primary">{results.score}</p>
-            </CardContent>
-          </Card>
-       )}
-
-      <div className="grid md:grid-cols-3 gap-4">
-        <Card className="flex flex-col items-center justify-center p-6">
-            <CheckCircle className="h-8 w-8 text-green-500 mb-2"/>
-            <p className="text-2xl font-bold">{results.correctAnswers}</p>
-            <p className="text-muted-foreground">Correct</p>
+            </div>
+            <div className="flex gap-6">
+              <div className="flex flex-col items-center gap-1">
+                <CheckCircle className="h-7 w-7 text-green-500" />
+                <p className="text-xl font-bold">{results.correctAnswers}</p>
+                <p className="text-xs text-muted-foreground">Correct</p>
+              </div>
+              <div className="flex flex-col items-center gap-1">
+                <XCircle className="h-7 w-7 text-red-500" />
+                <p className="text-xl font-bold">{results.incorrectAnswers}</p>
+                <p className="text-xs text-muted-foreground">Incorrect</p>
+              </div>
+              <div className="flex flex-col items-center gap-1">
+                <SkipForward className="h-7 w-7 text-yellow-500" />
+                <p className="text-xl font-bold">{results.skippedQuestions}</p>
+                <p className="text-xs text-muted-foreground">Skipped</p>
+              </div>
+            </div>
+          </CardContent>
         </Card>
-        <Card className="flex flex-col items-center justify-center p-6">
-            <XCircle className="h-8 w-8 text-red-500 mb-2"/>
-            <p className="text-2xl font-bold">{results.incorrectAnswers}</p>
-            <p className="text-muted-foreground">Incorrect</p>
-        </Card>
-        <Card className="flex flex-col items-center justify-center p-6">
-            <SkipForward className="h-8 w-8 text-yellow-500 mb-2"/>
-            <p className="text-2xl font-bold">{results.skippedQuestions}</p>
-            <p className="text-muted-foreground">Skipped</p>
-        </Card>
-      </div>
-      
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <BarChart className="h-6 w-6 text-accent"/>
-            <CardTitle>Category Performance</CardTitle>
-          </div>
-          <CardDescription>Your scores across different categories.</CardDescription>
-        </CardHeader>
-        <CardContent>
-            <ChartContainer config={chartConfig} className="h-64 w-full">
-                <RechartsBarChart data={chartData} accessibilityLayer>
-                    <CartesianGrid vertical={false} />
-                    <XAxis dataKey="name" tickLine={false} tickMargin={10} axisLine={false} />
-                    <YAxis unit="%" />
-                    <ChartTooltip content={<ChartTooltipContent />} />
-                    <Bar dataKey="score" fill="var(--color-score)" radius={8} />
-                </RechartsBarChart>
-            </ChartContainer>
-        </CardContent>
-      </Card>
+      )}
 
       <Card>
         <CardHeader>
@@ -201,68 +182,91 @@ export function QuizResults({ results, isReviewMode = false }: ResultsProps) {
           )}
         </CardContent>
       </Card>
-
-       <Card>
+      
+      <div className="grid md:grid-cols-2 gap-6">
+        <Card>
           <CardHeader>
-            <CardTitle>Full Quiz Review</CardTitle>
-            <CardDescription>A question-by-question breakdown of your answers.</CardDescription>
+            <div className="flex items-center gap-2">
+              <BarChart className="h-6 w-6 text-accent"/>
+              <CardTitle>Category Performance</CardTitle>
+            </div>
+            <CardDescription>Your scores across different categories.</CardDescription>
           </CardHeader>
           <CardContent>
-              <Accordion type="single" collapsible className="w-full">
-                  {allQuestionDetails.map((item, index) => (
-                      <AccordionItem value={`item-${index}`} key={index}>
-                          <AccordionTrigger>
-                              <div className="flex items-center gap-3 text-left">
-                                  {item.isCorrect ? <CheckCircle className="h-5 w-5 text-green-500 shrink-0" /> : item.isIncorrect ? <XCircle className="h-5 w-5 text-red-500 shrink-0" /> : <HelpCircle className="h-5 w-5 text-muted-foreground shrink-0" />}
-                                  <span className="flex-1">{item.text}</span>
-                              </div>
-                          </AccordionTrigger>
-                          <AccordionContent className="space-y-4">
-                              <div className="grid grid-cols-2 gap-4">
+              <ChartContainer config={chartConfig} className="h-64 w-full">
+                  <RechartsBarChart data={chartData} accessibilityLayer>
+                      <CartesianGrid vertical={false} />
+                      <XAxis dataKey="name" tickLine={false} tickMargin={10} axisLine={false} fontSize={12} />
+                      <YAxis unit="%" />
+                      <ChartTooltip content={<ChartTooltipContent />} />
+                      <Bar dataKey="score" fill="var(--color-score)" radius={4} />
+                  </RechartsBarChart>
+              </ChartContainer>
+          </CardContent>
+        </Card>
+
+        <Card>
+            <CardHeader>
+              <CardTitle>Full Quiz Review</CardTitle>
+              <CardDescription>A question-by-question breakdown.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Accordion type="single" collapsible className="w-full">
+                    {allQuestionDetails.map((item, index) => (
+                        <AccordionItem value={`item-${index}`} key={index}>
+                            <AccordionTrigger>
+                                <div className="flex items-center gap-3 text-left">
+                                    {item.isCorrect ? <CheckCircle className="h-5 w-5 text-green-500 shrink-0" /> : item.isIncorrect ? <XCircle className="h-5 w-5 text-red-500 shrink-0" /> : <HelpCircle className="h-5 w-5 text-muted-foreground shrink-0" />}
+                                    <span className="flex-1 text-sm font-medium">{item.text}</span>
+                                </div>
+                            </AccordionTrigger>
+                            <AccordionContent className="space-y-4 pt-2">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div>
+                                        <p className="text-xs font-semibold mb-1 text-muted-foreground">YOUR ANSWER</p>
+                                        <p className={cn("text-sm p-2 rounded-md border", 
+                                          item.isCorrect && "bg-green-500/10 border-green-500/20",
+                                          item.isIncorrect && "bg-red-500/10 border-red-500/20",
+                                          !item.userAnswer && "bg-secondary"
+                                        )}>
+                                          {item.userAnswer || 'Not Answered'}
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs font-semibold mb-1 text-muted-foreground">CORRECT ANSWER</p>
+                                        <p className="text-sm p-2 rounded-md bg-green-500/10 border border-green-500/20">{item.answer}</p>
+                                    </div>
+                                </div>
+                                {item.isIncorrect && (
                                   <div>
-                                      <p className="text-sm font-semibold mb-1">Your Answer</p>
-                                      <p className={cn("text-sm p-2 rounded-md border", 
-                                        item.isCorrect && "bg-green-500/10 text-green-700 border-green-500/20",
-                                        item.isIncorrect && "bg-red-500/10 text-red-700 border-red-500/20",
-                                        !item.userAnswer && "bg-secondary"
-                                      )}>
-                                        {item.userAnswer || 'Not Answered'}
-                                      </p>
-                                  </div>
-                                  <div>
-                                      <p className="text-sm font-semibold mb-1">Correct Answer</p>
-                                      <p className="text-sm p-2 rounded-md bg-green-500/10 text-green-700 border border-green-500/20">{item.answer}</p>
-                                  </div>
-                              </div>
-                              {item.isIncorrect && (
-                                <>
-                                  <div>
-                                      <p className="text-sm font-semibold mb-1">Explanation</p>
+                                      <p className="text-xs font-semibold mb-1 text-muted-foreground">AI EXPLANATION</p>
                                       {loadingFeedback ? (
-                                           <Skeleton className="h-4 w-full" />
+                                           <Skeleton className="h-4 w-full mt-2" />
                                       ) : item.feedback ? (
+                                        <>
                                            <p className="text-sm text-foreground/80">{item.feedback}</p>
+                                           {item.resourceQuery && (
+                                              <Button variant="outline" size="sm" asChild className="mt-2">
+                                                  <a href={`https://www.google.com/search?q=${encodeURIComponent(item.resourceQuery)}`} target="_blank" rel="noopener noreferrer">
+                                                      Learn more <ExternalLink className="ml-2 h-4 w-4" />
+                                                  </a>
+                                              </Button>
+                                          )}
+                                        </>
                                       ) : (
                                         <p className="text-sm text-muted-foreground italic">No explanation available.</p>
                                       )}
                                   </div>
-                                  {item.resourceQuery && (
-                                      <Button variant="outline" size="sm" asChild>
-                                          <a href={`https://www.google.com/search?q=${encodeURIComponent(item.resourceQuery)}`} target="_blank" rel="noopener noreferrer">
-                                              Learn more <ExternalLink className="ml-2 h-4 w-4" />
-                                          </a>
-                                      </Button>
-                                  )}
-                                </>
-                              )}
-                          </AccordionContent>
-                      </AccordionItem>
-                  ))}
-              </Accordion>
-          </CardContent>
-       </Card>
+                                )}
+                            </AccordionContent>
+                        </AccordionItem>
+                    ))}
+                </Accordion>
+            </CardContent>
+        </Card>
+      </div>
 
-      <div className="flex gap-4">
+      <div className="flex gap-4 pt-4">
         {!isReviewMode && (
           <Button asChild className="flex-1">
               <Link href={`/quiz/${results.quizId}`}>Try Again</Link>
