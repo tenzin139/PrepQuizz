@@ -2,19 +2,73 @@
 
 import * as React from 'react';
 import Image from 'next/image';
-import { handleSignup } from '@/lib/actions';
 import { Button } from '@/components/ui/button';
 import { CardContent, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
-import { ProfileAvatars } from '@/lib/mock-data';
 import { cn } from '@/lib/utils';
 import { getAvatarPlaceholders } from '@/lib/placeholder-images';
+import { useAuth, useFirestore, setDocumentNonBlocking } from '@/firebase';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { doc } from 'firebase/firestore';
+import { useRouter } from 'next/navigation';
+import { useToast } from '@/hooks/use-toast';
 
 export function SignupForm() {
   const avatars = getAvatarPlaceholders();
   const [selectedAvatar, setSelectedAvatar] = React.useState(avatars[0]?.imageUrl || '');
+
+  const auth = useAuth();
+  const firestore = useFirestore();
+  const router = useRouter();
+  const { toast } = useToast();
+
+
+  async function handleSignup(formData: FormData) {
+    const name = formData.get('name') as string;
+    const age = formData.get('age') as string;
+    const state = formData.get('state') as string;
+    const avatarUrl = formData.get('avatarUrl') as string;
+    const email = formData.get('email') as string;
+    const password = formData.get('password') as string;
+
+    if (!name || !age || !state || !avatarUrl || !email || !password) {
+      toast({
+        variant: 'destructive',
+        title: 'Missing Fields',
+        description: 'Please fill out all fields.',
+      });
+      return;
+    }
+
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      if (user) {
+        const userProfile = {
+          id: user.uid,
+          name,
+          age: parseInt(age, 10),
+          state,
+          profileImageURL: avatarUrl,
+        };
+
+        const userDocRef = doc(firestore, `users/${user.uid}`);
+        setDocumentNonBlocking(userDocRef, userProfile, { merge: true });
+        router.push('/');
+      }
+    } catch (error: any) {
+      console.error('Signup failed:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Signup Failed',
+        description: error.message || 'An unexpected error occurred.',
+      });
+    }
+  }
+
 
   return (
     <form action={handleSignup}>
@@ -56,6 +110,7 @@ export function SignupForm() {
                     className="h-full w-full object-cover"
                     data-ai-hint={avatar.imageHint}
                   />
+
                   <span className="sr-only">{avatar.description}</span>
                 </button>
               ))}
