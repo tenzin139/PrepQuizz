@@ -17,6 +17,7 @@ import type { PersonalizedFeedbackOutput } from '@/ai/flows/personalized-feedbac
 import type { QuizQuestion } from '@/lib/types';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { cn } from '@/lib/utils';
+import { useUser } from '@/firebase';
 
 export type DetailedQuizResults = {
     quizId: string;
@@ -39,12 +40,14 @@ export type DetailedQuizResults = {
 
 type ResultsProps = {
   results: DetailedQuizResults;
+  isReviewMode?: boolean;
 };
 
-export function QuizResults({ results }: ResultsProps) {
+export function QuizResults({ results, isReviewMode = false }: ResultsProps) {
   const [aiFeedback, setAiFeedback] = React.useState<PersonalizedFeedbackOutput | null>(null);
   const [loadingFeedback, setLoadingFeedback] = React.useState(true);
   const [errorFeedback, setErrorFeedback] = React.useState<string | null>(null);
+  const { user } = useUser();
 
   React.useEffect(() => {
     async function fetchFeedback() {
@@ -56,8 +59,11 @@ export function QuizResults({ results }: ResultsProps) {
         setLoadingFeedback(false);
         return;
       }
-
+      
       const feedbackPayload = {
+        userName: user?.displayName || 'Student',
+        userAge: 25, // This should be fetched from user profile
+        userState: 'CA', // This should be fetched from user profile
         incorrectQuestions: results.incorrectQuestions,
       };
       
@@ -76,7 +82,7 @@ export function QuizResults({ results }: ResultsProps) {
       }
     }
     fetchFeedback();
-  }, [results.incorrectQuestions]);
+  }, [results.incorrectQuestions, user]);
 
   const chartData = Object.entries(results.categoryScores).map(([name, score]) => ({
     name,
@@ -90,10 +96,17 @@ export function QuizResults({ results }: ResultsProps) {
     },
   };
   
-  const incorrectQuestionDetails = results.incorrectQuestions.map(iq => {
-    const feedback = aiFeedback?.questionFeedback.find(f => f.questionText === iq.questionText);
+  const allQuestionDetails = results.allQuestions.map(q => {
+    const userAnswer = results.userAnswers[q.id.toString()];
+    const isCorrect = userAnswer === q.answer;
+    const isIncorrect = userAnswer && !isCorrect;
+    const feedback = isIncorrect ? aiFeedback?.questionFeedback.find(f => f.questionText === q.text) : undefined;
+    
     return {
-      ...iq,
+      ...q,
+      userAnswer,
+      isCorrect,
+      isIncorrect,
       feedback: feedback?.feedback,
       resourceQuery: feedback?.resourceQuery
     };
@@ -145,7 +158,7 @@ export function QuizResults({ results }: ResultsProps) {
                     <XAxis dataKey="name" tickLine={false} tickMargin={10} axisLine={false} />
                     <YAxis unit="%" />
                     <ChartTooltip content={<ChartTooltipContent />} />
-                    <Bar dataKey="score" fill="var(--color-score)" radius={4} />
+                    <Bar dataKey="score" fill="var(--color-score)" radius={8} />
                 </RechartsBarChart>
             </ChartContainer>
         </CardContent>
@@ -155,9 +168,9 @@ export function QuizResults({ results }: ResultsProps) {
         <CardHeader>
           <div className="flex items-center gap-2">
             <Lightbulb className="h-6 w-6 text-accent"/>
-            <CardTitle>Personalized Feedback</CardTitle>
+            <CardTitle>AI-Powered Analysis</CardTitle>
           </div>
-          <CardDescription>AI-powered suggestions to help you improve.</CardDescription>
+          <CardDescription>Personalized feedback to help you improve.</CardDescription>
         </CardHeader>
         <CardContent>
           {loadingFeedback ? (
@@ -168,29 +181,46 @@ export function QuizResults({ results }: ResultsProps) {
           ) : errorFeedback ? (
              <p className="text-destructive">{errorFeedback}</p>
           ) : (
-            <div>
-                <p className="text-foreground/90 mb-6">{aiFeedback?.overallFeedback}</p>
-                {incorrectQuestionDetails.length > 0 && (
-                    <Accordion type="single" collapsible className="w-full">
-                        {incorrectQuestionDetails.map((item, index) => (
-                            <AccordionItem value={`item-${index}`} key={index}>
-                                <AccordionTrigger>
-                                    <div className="flex items-center gap-3 text-left">
-                                        <HelpCircle className="h-5 w-5 text-destructive shrink-0" />
-                                        <span className="flex-1">{item.questionText}</span>
+             <p className="text-foreground/90">{aiFeedback?.overallFeedback}</p>
+          )}
+        </CardContent>
+      </Card>
+
+      {isReviewMode && (
+         <Card>
+            <CardHeader>
+              <CardTitle>Full Quiz Review</CardTitle>
+              <CardDescription>A question-by-question breakdown of your answers.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Accordion type="single" collapsible className="w-full">
+                    {allQuestionDetails.map((item, index) => (
+                        <AccordionItem value={`item-${index}`} key={index}>
+                            <AccordionTrigger>
+                                <div className="flex items-center gap-3 text-left">
+                                    {item.isCorrect ? <CheckCircle className="h-5 w-5 text-green-500 shrink-0" /> : item.isIncorrect ? <XCircle className="h-5 w-5 text-red-500 shrink-0" /> : <HelpCircle className="h-5 w-5 text-muted-foreground shrink-0" />}
+                                    <span className="flex-1">{item.questionText}</span>
+                                </div>
+                            </AccordionTrigger>
+                            <AccordionContent className="space-y-4">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <p className="text-sm font-semibold mb-1">Your Answer</p>
+                                        <p className={cn("text-sm p-2 rounded-md border", 
+                                          item.isCorrect && "bg-green-500/10 text-green-700 border-green-500/20",
+                                          item.isIncorrect && "bg-red-500/10 text-red-700 border-red-500/20",
+                                          !item.userAnswer && "bg-secondary"
+                                        )}>
+                                          {item.userAnswer || 'Not Answered'}
+                                        </p>
                                     </div>
-                                </AccordionTrigger>
-                                <AccordionContent className="space-y-4">
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <p className="text-sm font-semibold mb-1">Your Answer</p>
-                                            <p className="text-sm p-2 rounded-md bg-destructive/10 text-destructive-foreground border border-destructive/20">{item.userAnswer}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-sm font-semibold mb-1">Correct Answer</p>
-                                            <p className="text-sm p-2 rounded-md bg-green-500/10 text-green-700 border border-green-500/20">{item.correctAnswer}</p>
-                                        </div>
+                                    <div>
+                                        <p className="text-sm font-semibold mb-1">Correct Answer</p>
+                                        <p className="text-sm p-2 rounded-md bg-green-500/10 text-green-700 border border-green-500/20">{item.correctAnswer}</p>
                                     </div>
+                                </div>
+                                {item.isIncorrect && (
+                                  <>
                                     <div>
                                         <p className="text-sm font-semibold mb-1">Explanation</p>
                                         {item.feedback ? (
@@ -206,15 +236,15 @@ export function QuizResults({ results }: ResultsProps) {
                                             </a>
                                         </Button>
                                     )}
-                                </AccordionContent>
-                            </AccordionItem>
-                        ))}
-                    </Accordion>
-                )}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                                  </>
+                                )}
+                            </AccordionContent>
+                        </AccordionItem>
+                    ))}
+                </Accordion>
+            </CardContent>
+         </Card>
+      )}
 
       <div className="flex gap-4">
         <Button asChild className="flex-1">

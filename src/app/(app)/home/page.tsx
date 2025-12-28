@@ -83,8 +83,10 @@ function PastQuizzes() {
             </div>
           </CardContent>
           <CardFooter>
-            <Button variant="outline" className="w-full" disabled>
-              Review Quiz <ArrowRight className="ml-2 h-4 w-4" />
+            <Button asChild variant="outline" className="w-full" disabled={!quiz.id}>
+              <Link href={`/review/${quiz.id}`}>
+                Review Quiz <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
             </Button>
           </CardFooter>
         </Card>

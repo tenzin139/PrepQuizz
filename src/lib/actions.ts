@@ -2,8 +2,8 @@
 
 import { generatePersonalizedFeedback, type PersonalizedFeedbackInput, type PersonalizedFeedbackOutput } from '@/ai/flows/personalized-feedback-generation';
 import { redirect } from 'next/navigation';
-import { initializeFirebase, setDocumentNonBlocking, initiateEmailSignIn, initiateEmailSignUp } from '@/firebase';
-import { doc } from 'firebase/firestore';
+import { initializeFirebase, setDocumentNonBlocking, initiateEmailSignIn, initiateEmailSignUp, useUser } from '@/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 
 export async function handleLogin(formData: FormData) {
   const { auth } = initializeFirebase();
@@ -62,21 +62,9 @@ export async function handleSignup(formData: FormData) {
 }
 
 
-export async function getAIFeedback(payload: { incorrectQuestions: PersonalizedFeedbackInput['incorrectQuestions'] }): Promise<{ feedback?: PersonalizedFeedbackOutput; error?: string }> {
-  // In a real app, user data would come from the authenticated session
-  const userData = {
-    userName: 'Alex Doe',
-    userAge: 23,
-    userState: 'California',
-  };
-
-  const input: PersonalizedFeedbackInput = {
-    ...userData,
-    incorrectQuestions: payload.incorrectQuestions,
-  };
-
+export async function getAIFeedback(payload: PersonalizedFeedbackInput): Promise<{ feedback?: PersonalizedFeedbackOutput; error?: string }> {
   try {
-    const result = await generatePersonalizedFeedback(input);
+    const result = await generatePersonalizedFeedback(payload);
     return { feedback: result };
   } catch (error) {
     console.error('Error generating AI feedback:', error);

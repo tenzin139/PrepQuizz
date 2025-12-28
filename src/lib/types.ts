@@ -32,6 +32,9 @@ export type QuizResult = {
   totalQuestions: number;
   completionTime: number;
   completionDate?: Timestamp;
+  // Detailed fields for review
+  allQuestions?: QuizQuestion[];
+  userAnswers?: Record<string, string>;
 };
 
 export type LeaderboardEntry = {

@@ -61,6 +61,9 @@ export default function ResultsPage() {
         incorrectAnswers,
         skippedQuestions,
         totalQuestions,
+        completionTime,
+        allQuestions,
+        userAnswers
       } = results;
 
       const quizResultData = {
@@ -72,8 +75,10 @@ export default function ResultsPage() {
         incorrectAnswers,
         skippedAnswers: skippedQuestions,
         totalQuestions,
-        completionTime: results.completionTime,
+        completionTime,
         completionDate: serverTimestamp(),
+        allQuestions, // Storing all questions for review
+        userAnswers, // Storing user's answers for review
       };
       
       const resultsColRef = collection(firestore, `users/${user.uid}/quiz_results`);
