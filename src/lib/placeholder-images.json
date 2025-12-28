@@ -39,20 +39,20 @@
     {
       "id": "quiz-history",
       "description": "A placeholder image for a history quiz.",
-      "imageUrl": "https://images.unsplash.com/photo-1748187318527-b257c0de6aaa?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxoaXN0b3J5JTIwYW5jaWVudHxlbnwwfHx8fDE3NjY5MTI3Mjh8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageUrl": "https://images.unsplash.com/photo-1748187318527-b257c0de6aaa?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxoaXN0b3J5JTIwYW5jaWVudHxlbnwwfHx8fDE3NjY5MTI3Mjh8MA&ixlibrb-4.1.0&q=80&w=1080",
       "imageHint": "history ancient"
     },
     {
       "id": "quiz-science",
       "description": "A placeholder image for a science quiz.",
-      "imageUrl": "https://images.unsplash.com/photo-1518152006812-edab29b069ac?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8c2NpZW5jZSUyMGxhYnxlbnwwfHx8fDE3NjY4MjM2OTl8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageUrl": "https://images.unsplash.com/photo-1518152006812-edab29b069ac?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8c2NpZW5jZSUyMGxhYnxlbnwwfHx8fDE3NjY4MjM2OTl8MA&ixlibrb-4.1.0&q=80&w=1080",
       "imageHint": "science lab"
     },
     {
       "id": "home-hero",
-      "description": "An illustration of a person studying.",
-      "imageUrl": "https://images.unsplash.com/photo-1729516800796-99501b208ab4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxzdHVkeSUyMHBlcnNvbnxlbnwwfHx8fDE3NjY5NDg3NTB8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "study person"
+      "description": "An illustration of a person studying on a stack of books.",
+      "imageUrl": "https://images.unsplash.com/photo-1599409353925-e99992336365?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxpbGx1c3RyYXRpb24lMjBzdHVkeWluZ3xlbnwwfHx8fDE3NjY5OTQyNDl8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "study illustration"
     }
   ]
 }
