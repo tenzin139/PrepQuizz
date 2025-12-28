@@ -16,7 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth, useFirestore, useUser } from '@/firebase';
 import { updateProfile } from 'firebase/auth';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useToast } from '@/hooks/use-toast';
 import type { UserProfile } from '@/lib/types';
@@ -150,29 +150,39 @@ export function EditProfileDialog({ open, onOpenChange, userProfile }: EditProfi
         const snapshot = await uploadBytes(newPhotoRef, selectedFile);
         newPhotoURL = await getDownloadURL(snapshot.ref);
       }
-      // Note: Capturing from camera is not implemented yet.
-
+      
       const updates: Promise<any>[] = [];
-      
-      const hasProfileInfoChanged = name !== userProfile.name || newPhotoURL !== userProfile.profileImageURL;
+      const nameChanged = name !== userProfile.name;
+      const photoChanged = newPhotoURL !== userProfile.profileImageURL;
 
-      // Update Firebase Auth profile
-      if (name !== auth.currentUser.displayName || newPhotoURL !== auth.currentUser.photoURL) {
-         updates.push(updateProfile(auth.currentUser, { displayName: name, photoURL: newPhotoURL }));
-      }
+      if (nameChanged || photoChanged) {
+        // Update Firebase Auth profile
+        updates.push(updateProfile(auth.currentUser, { 
+          displayName: name, 
+          photoURL: newPhotoURL 
+        }));
 
-      // Update Firestore user profile document
-      const userDocRef = doc(firestore, 'users', user.uid);
-      const userDocUpdate: {name: string, profileImageURL: string} = { name, profileImageURL: newPhotoURL };
-      updates.push(updateDoc(userDocRef, userDocUpdate));
-      
-      // Update denormalized leaderboard entry if profile info changed
-      if (hasProfileInfoChanged) {
+        // Update Firestore user profile document
+        const userDocRef = doc(firestore, 'users', user.uid);
+        updates.push(updateDoc(userDocRef, { 
+          name: name, 
+          profileImageURL: newPhotoURL 
+        }));
+        
+        // Update denormalized leaderboard entry if it exists
         const leaderboardRef = doc(firestore, 'leaderboard_entries', user.uid);
-        updates.push(updateDoc(leaderboardRef, { name: name, profileImageURL: newPhotoURL }));
+        const leaderboardDoc = await getDoc(leaderboardRef);
+        if (leaderboardDoc.exists()) {
+          updates.push(updateDoc(leaderboardRef, { 
+            name: name, 
+            profileImageURL: newPhotoURL 
+          }));
+        }
       }
 
-      await Promise.all(updates);
+      if (updates.length > 0) {
+        await Promise.all(updates);
+      }
 
       toast({
         title: 'Profile Updated',
