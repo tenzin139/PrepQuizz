@@ -14,6 +14,7 @@ export type Quiz = {
   title: string;
   description: string;
   category: string;
+  subCategories?: string[];
   questionsCount: number;
   duration: number; // in seconds
   image: string;

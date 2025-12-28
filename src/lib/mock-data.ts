@@ -22,10 +22,11 @@ export const QuizCategories = [
 export const Quizzes: Quiz[] = [
   {
     id: 'upsc-gs-1',
-    title: 'UPSC General Studies Mix',
+    title: 'UPSC General Studies',
     description: 'A 2-minute challenge to test your knowledge across all UPSC topics.',
     category: 'Mixed',
-    questionsCount: 10,
+    subCategories: ['Prelims', 'Mains'],
+    questionsCount: 0, // No longer used
     duration: 120, // in seconds
     image: getPlaceholderImage('quiz-upsc')?.imageUrl || '',
     imageHint: 'library study',
@@ -35,7 +36,7 @@ export const Quizzes: Quiz[] = [
     title: 'NEET Biology Practice',
     description: 'A 2-minute challenge to test your knowledge in key areas of Biology for NEET.',
     category: 'Science',
-    questionsCount: 10,
+    questionsCount: 0, // No longer used
     duration: 120,
     image: getPlaceholderImage('quiz-neet')?.imageUrl || '',
     imageHint: 'DNA biology',

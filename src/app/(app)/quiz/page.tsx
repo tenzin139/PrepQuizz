@@ -1,12 +1,34 @@
+'use client';
+
+import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { PageHeader } from '@/components/shared/page-header';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Quizzes } from '@/lib/mock-data';
+import type { Quiz } from '@/lib/types';
 import { Clock } from 'lucide-react';
+import { QuizSelectionDialog } from '@/components/quiz/quiz-selection-dialog';
 
 export default function QuizSelectionPage() {
+  const [selectedQuiz, setSelectedQuiz] = useState<Quiz | null>(null);
+
+  const handleStartQuiz = (quiz: Quiz) => {
+    if (quiz.subCategories && quiz.subCategories.length > 0) {
+      setSelectedQuiz(quiz);
+    } else {
+      // For quizzes without sub-categories, we would navigate directly
+      // This requires the parent component to handle the navigation logic.
+      // For now, we will just log it, but a router.push would go here.
+      console.log(`Navigating to /quiz/${quiz.id}`);
+    }
+  };
+
+  const handleCloseDialog = () => {
+    setSelectedQuiz(null);
+  };
+
   return (
     <div>
       <PageHeader
@@ -38,13 +60,24 @@ export default function QuizSelectionPage() {
               </div>
             </CardContent>
             <CardFooter>
-              <Button asChild className="w-full">
-                <Link href={`/quiz/${quiz.id}`}>Start Quiz</Link>
-              </Button>
+              {quiz.subCategories ? (
+                 <Button className="w-full" onClick={() => handleStartQuiz(quiz)}>Start Quiz</Button>
+              ) : (
+                <Button asChild className="w-full">
+                  <Link href={`/quiz/${quiz.id}`}>Start Quiz</Link>
+                </Button>
+              )}
             </CardFooter>
           </Card>
         ))}
       </div>
+      {selectedQuiz && (
+        <QuizSelectionDialog
+          quiz={selectedQuiz}
+          open={!!selectedQuiz}
+          onClose={handleCloseDialog}
+        />
+      )}
     </div>
   );
 }
