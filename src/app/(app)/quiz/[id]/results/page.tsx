@@ -1,14 +1,17 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { QuizResults, type DetailedQuizResults } from '@/components/quiz/quiz-results';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PageHeader } from '@/components/shared/page-header';
 import { Button } from '@/components/ui/button';
-import { useFirestore, useUser, addDocumentNonBlocking } from '@/firebase';
-import { collection, serverTimestamp } from 'firebase/firestore';
+import { useFirestore, useUser, addDocumentNonBlocking, useDoc, useMemoFirebase } from '@/firebase';
+import { collection, serverTimestamp, doc, getDoc, runTransaction } from 'firebase/firestore';
+import type { QuizResult } from '@/lib/types';
+import type { UserProfile } from '@/lib/types';
+
 
 function ResultsFallback() {
     return (
@@ -32,9 +35,15 @@ export default function ResultsPage() {
   const router = useRouter();
   const [results, setResults] = useState<DetailedQuizResults | null>(null);
   const [error, setError] = useState<string | null>(null);
-
-  const firestore = useFirestore();
   const { user } = useUser();
+  const firestore = useFirestore();
+  
+  const userProfileRef = useMemoFirebase(() => {
+    if (!user) return null;
+    return doc(firestore, 'users', user.uid);
+  }, [user, firestore]);
+
+  const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
 
   useEffect(() => {
     const resultsData = sessionStorage.getItem('quizResults');
@@ -52,39 +61,63 @@ export default function ResultsPage() {
   }, []);
 
   useEffect(() => {
-    if (results && user && firestore) {
-      const {
-        quizId,
-        quizTitle,
-        score,
-        correctAnswers,
-        incorrectAnswers,
-        skippedQuestions,
-        totalQuestions,
-        completionTime,
-        allQuestions,
-        userAnswers
-      } = results;
+    if (results && user && firestore && userProfile) {
+      const saveResults = async () => {
+        const {
+          quizId,
+          quizTitle,
+          score,
+          correctAnswers,
+          incorrectAnswers,
+          skippedQuestions,
+          totalQuestions,
+          completionTime,
+          allQuestions,
+          userAnswers
+        } = results;
 
-      const quizResultData = {
-        userId: user.uid,
-        quizId,
-        quizTitle,
-        score,
-        correctAnswers,
-        incorrectAnswers,
-        skippedAnswers: skippedQuestions,
-        totalQuestions,
-        completionTime,
-        completionDate: serverTimestamp(),
-        allQuestions, // Storing all questions for review
-        userAnswers, // Storing user's answers for review
+        const quizResultData: Omit<QuizResult, 'id'> = {
+          userId: user.uid,
+          quizId,
+          quizTitle,
+          score,
+          correctAnswers,
+          incorrectAnswers,
+          skippedAnswers: skippedQuestions,
+          totalQuestions,
+          completionTime,
+          completionDate: serverTimestamp(),
+          allQuestions,
+          userAnswers,
+        };
+        
+        const resultsColRef = collection(firestore, `users/${user.uid}/quiz_results`);
+        const newResultRef = await addDocumentNonBlocking(resultsColRef, quizResultData);
+
+        if (newResultRef) {
+          const leaderboardRef = doc(firestore, 'leaderboard_entries', user.uid);
+          
+          runTransaction(firestore, async (transaction) => {
+            const leaderboardDoc = await transaction.get(leaderboardRef);
+            const currentTotalScore = leaderboardDoc.exists() ? leaderboardDoc.data().score : 0;
+            const newTotalScore = currentTotalScore + score;
+            
+            const leaderboardEntry = {
+                userId: user.uid,
+                score: newTotalScore,
+                name: userProfile.name,
+                state: userProfile.state,
+                profileImageURL: userProfile.profileImageURL,
+                submissionDate: serverTimestamp(),
+            }
+            transaction.set(leaderboardRef, leaderboardEntry, { merge: true });
+          }).catch(e => console.error("Leaderboard transaction failed: ", e));
+        }
       };
-      
-      const resultsColRef = collection(firestore, `users/${user.uid}/quiz_results`);
-      addDocumentNonBlocking(resultsColRef, quizResultData);
+
+      saveResults();
     }
-  }, [results, user, firestore]);
+  }, [results, user, firestore, userProfile]);
 
   if (error) {
     return (
@@ -108,7 +141,7 @@ export default function ResultsPage() {
     <div>
         <PageHeader title="Quiz Results" description={`Here's how you performed in the ${results.quizTitle} quiz.`} />
         <Suspense fallback={<ResultsFallback />}>
-            <QuizResults results={results} />
+            <QuizResults results={results} isReviewMode={false} />
         </Suspense>
     </div>
   );

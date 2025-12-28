@@ -3,7 +3,7 @@ import { Timestamp } from 'firebase/firestore';
 export type QuizQuestion = {
   id: number;
   category: string;
-  question: string;
+  question: string; // Legacy, prefer `text`
   text: string;
   options: string[];
   answer: string;
@@ -21,7 +21,7 @@ export type Quiz = {
 };
 
 export type QuizResult = {
-  id?: string;
+  id: string; // Document ID
   userId: string;
   quizId: string;
   quizTitle: string;
@@ -38,8 +38,19 @@ export type QuizResult = {
 };
 
 export type LeaderboardEntry = {
-  rank: number;
+  id: string; // Document ID, which is the user's UID
+  userId: string;
+  score: number;
   name: string;
   state: string;
-  score: number;
+  profileImageURL: string;
+  submissionDate: Timestamp;
+};
+
+export type UserProfile = {
+  id: string;
+  name: string;
+  age: number;
+  state: string;
+  profileImageURL: string;
 };

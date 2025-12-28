@@ -164,30 +164,40 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "LeaderboardEntry",
       "type": "object",
-      "description": "Represents an entry in the global leaderboard.",
+      "description": "Represents an entry in the global leaderboard, denormalized with user info for efficient reads.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the LeaderboardEntry entity."
-        },
         "userId": {
           "type": "string",
-          "description": "Reference to UserProfile. (Relationship: UserProfile 1:N LeaderboardEntry)"
+          "description": "Reference to UserProfile. The document ID is the user's UID."
         },
         "score": {
           "type": "number",
           "description": "The user's total score for the leaderboard."
         },
+        "name": {
+          "type": "string",
+          "description": "Denormalized user's full name from their UserProfile."
+        },
+        "state": {
+          "type": "string",
+          "description": "Denormalized user's state from their UserProfile."
+        },
+        "profileImageURL": {
+          "type": "string",
+          "description": "Denormalized URL of the user's profile image from their UserProfile."
+        },
         "submissionDate": {
           "type": "string",
-          "description": "The date and time when the score was submitted.",
+          "description": "The date and time when the score was last updated.",
           "format": "date-time"
         }
       },
       "required": [
-        "id",
         "userId",
-        "score"
+        "score",
+        "name",
+        "state",
+        "submissionDate"
       ]
     }
   },
@@ -272,22 +282,22 @@
         }
       },
       {
-        "path": "/leaderboard_entries/{leaderboardEntryId}",
+        "path": "/leaderboard_entries/{userId}",
         "definition": {
           "entityName": "LeaderboardEntry",
           "schema": {
             "$ref": "#/backend/entities/LeaderboardEntry"
           },
-          "description": "Stores leaderboard entries.  Security rules will ensure that only authenticated users can create leaderboard entries, and only admins can modify or delete them.",
+          "description": "Stores leaderboard entries, with the document ID being the user's UID for easy updates. The user's name, state, and profile image are denormalized for efficient leaderboard rendering without extra lookups.",
           "params": [
             {
-              "name": "leaderboardEntryId",
-              "description": "The unique identifier of the leaderboard entry."
+              "name": "userId",
+              "description": "The unique identifier of the user."
             }
           ]
         }
       }
     ],
-    "reasoning": "The Firestore data structure is designed to support the Prep Quiz application's requirements for user profiles, quizzes, questions, results, and leaderboards, while adhering to the principles of Authorization Independence, Clarity of Intent, DBAC, and QAPs. The structure emphasizes path-based ownership for private user data and membership maps for collaborative data (if any), alongside denormalization to enhance security rule simplicity and database read performance.\n\nUserProfile: User profiles are stored under `/users/{userId}`. This path-based ownership simplifies security rules, ensuring only the user can access their profile. Profile images are stored in Firebase Storage, with the URL stored in the Firestore document.\n\nQuizzes and Questions: Quizzes are stored in the `/quizzes/{quizId}` collection. Questions related to a quiz are stored in a subcollection `/quizzes/{quizId}/questions/{questionId}`. This hierarchical structure simplifies querying for questions within a specific quiz.\n\nQuiz Results: Quiz results are stored under `/users/{userId}/quiz_results/{quizResultId}`. This structure ensures that only the user or an admin can access the quiz results. Each `QuizResult` document will contain denormalized data from the associated Quiz and Question objects to allow efficient querying and display of results without requiring multiple reads.\n\nLeaderboard: Leaderboard entries are stored in the `/leaderboard_entries/{leaderboardEntryId}` collection. Each entry contains the `userId` and `score`. Security rules will ensure that only authenticated users can create leaderboard entries, and only admins can modify or delete them.\n\nAuthorization Independence (Denormalization): To avoid `get()` calls in security rules, authorization data is denormalized. For example, if collaborative quizzes were implemented, the `members` map (with roles) would be copied into each `quiz` document.\n\nQAPs (Rules are not Filters): The structure enables secure `list` operations. Path-based ownership for user profiles and quiz results ensures that listing documents under `/users/{userId}` only returns data owned by that user. Segregation of global data (like leaderboard entries) allows for different security rules to be applied.\n"
+    "reasoning": "The Firestore data structure is designed to support the Prep Quiz application's requirements for user profiles, quizzes, questions, results, and leaderboards, while adhering to the principles of Authorization Independence, Clarity of Intent, DBAC, and QAPs. The structure emphasizes path-based ownership for private user data and membership maps for collaborative data (if any), alongside denormalization to enhance security rule simplicity and database read performance.\n\nUserProfile: User profiles are stored under `/users/{userId}`. This path-based ownership simplifies security rules, ensuring only the user can access their profile. Profile images are stored in Firebase Storage, with the URL stored in the Firestore document.\n\nQuizzes and Questions: Quizzes are stored in the `/quizzes/{quizId}` collection. Questions related to a quiz are stored in a subcollection `/quizzes/{quizId}/questions/{questionId}`. This hierarchical structure simplifies querying for questions within a specific quiz.\n\nQuiz Results: Quiz results are stored under `/users/{userId}/quiz_results/{quizResultId}`. This structure ensures that only the user or an admin can access the quiz results. Each `QuizResult` document will contain denormalized data from the associated Quiz and Question objects to allow efficient querying and display of results without requiring multiple reads.\n\nLeaderboard: Leaderboard entries are stored in the `/leaderboard_entries/{userId}` collection where the document ID is the user's UID. This allows for easy, transactional updates to a user's total score. Each entry contains denormalized data (`name`, `state`, `profileImageURL`) for efficient rendering of the leaderboard.\n\nAuthorization Independence (Denormalization): To avoid `get()` calls in security rules, authorization data is denormalized. The leaderboard is a key example, where user info is copied to avoid lookups during list operations.\n\nQAPs (Rules are not Filters): The structure enables secure `list` operations. Path-based ownership for user profiles and quiz results ensures that listing documents under `/users/{userId}` only returns data owned by that user. Segregation of global data (like leaderboard entries) allows for different security rules to be applied.\n"
   }
 }

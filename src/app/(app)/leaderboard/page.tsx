@@ -8,14 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy, limit } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
-
-type LeaderboardEntry = {
-  id: string;
-  name: string;
-  score: number;
-  profileImageURL?: string;
-  state: string;
-};
+import type { LeaderboardEntry as LeaderboardEntryType } from '@/lib/types';
 
 export default function LeaderboardPage() {
   const firestore = useFirestore();
@@ -24,10 +17,7 @@ export default function LeaderboardPage() {
     return query(collection(firestore, 'leaderboard_entries'), orderBy('score', 'desc'), limit(20));
   }, [firestore]);
 
-  // Note: This is not a real-time subscription, it's a one-time fetch for simplicity.
-  // For a live leaderboard, you would use `useCollection`.
-  // However, `useCollection` would require a more complex setup to merge user profile data.
-  const { data: leaderboardData, isLoading } = useCollection<LeaderboardEntry>(leaderboardQuery);
+  const { data: leaderboardData, isLoading } = useCollection<LeaderboardEntryType>(leaderboardQuery);
 
   return (
     <div>
@@ -94,6 +84,11 @@ export default function LeaderboardPage() {
               ))}
             </TableBody>
           </Table>
+           {!isLoading && (!leaderboardData || leaderboardData.length === 0) && (
+            <div className="text-center p-8 text-muted-foreground">
+                No one is on the leaderboard yet. Be the first!
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

@@ -51,14 +51,16 @@ function ReviewContent({ resultId }: { resultId: string }) {
   }
 
   if (!result) {
-    // This will be caught by the parent notFound() but is good practice.
     return <PageHeader title="Not Found" description="Could not find the requested quiz result." />;
   }
   
   const allQuestions = result.allQuestions || AllQuizQuestions[result.quizId] || [];
 
-  const incorrectQuestions = allQuestions
-    .filter(q => result.userAnswers?.[q.id.toString()] && result.userAnswers[q.id.toString()] !== q.answer)
+  const incorrectQuestionsList = allQuestions
+    .filter(q => {
+        const userAnswer = result.userAnswers?.[q.id.toString()];
+        return userAnswer && userAnswer !== q.answer;
+    })
     .map(q => ({
         questionText: q.text,
         userAnswer: result.userAnswers?.[q.id.toString()] || '',
@@ -97,7 +99,7 @@ function ReviewContent({ resultId }: { resultId: string }) {
     skippedQuestions: result.skippedAnswers,
     totalQuestions: result.totalQuestions,
     categoryScores: finalCategoryScores,
-    incorrectQuestions: incorrectQuestions,
+    incorrectQuestions: incorrectQuestionsList,
     allQuestions: allQuestions,
     userAnswers: result.userAnswers || {},
   };

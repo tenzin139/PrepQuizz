@@ -15,8 +15,8 @@
  * - Public Read-Only Content: Core app content like quizzes and their questions are globally readable
  *   to allow any user (authenticated or not) to take them. Writes to this content are disabled at the
  *   rules level, assuming content is managed by a backend process or admin SDK.
- * - Authenticated-Only Creation: For public collections where users can contribute, like the leaderboard,
- *   creation is limited to signed-in users who must correctly identify themselves as the author of the new data.
+ * - Authenticated-Only Creation/Updates: For public collections where users can contribute, like the leaderboard,
+ *   creation and updates are limited to signed-in users who must correctly identify themselves.
  * - Immutability: Critical relational fields (like a user's ID within their own documents) are enforced
  *   as immutable after creation to prevent data re-association or ownership hijacking.
  *
@@ -114,18 +114,16 @@ service cloud.firestore {
 
     /**
      * @description Rules for the global leaderboard. The leaderboard is public and can be
-     * read by anyone. Authenticated users can create their own entries, but they cannot
-     * modify or delete any entries once created.
-     * @path /leaderboard_entries/{leaderboardEntryId}
-     * @allow A signed-in user with auth.uid 'user123' creating an entry where `userId` is 'user123'. (create)
-     * @deny A signed-in user trying to update or delete any leaderboard entry, even their own. (update, delete)
-     * @principle Implements a "write-once" model for user-submitted public data.
+     * read by anyone. Authenticated users can create or update their OWN entry,
+     * but they cannot modify or delete any other entries.
+     * @path /leaderboard_entries/{userId}
+     * @allow A signed-in user with auth.uid 'user123' creating or updating their entry at `/leaderboard_entries/user123`. (write)
+     * @deny A signed-in user trying to update or delete another user's leaderboard entry. (write)
+     * @principle Implements a "write-once" model for user-submitted public data, keyed by userId.
      */
-    match /leaderboard_entries/{leaderboardEntryId} {
+    match /leaderboard_entries/{userId} {
       allow get, list: if true;
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow update: if false; // Per reasoning, only admins can modify, and no admin role is defined.
-      allow delete: if false; // Per reasoning, only admins can delete.
+      allow write: if isOwner(userId); // Allows create, update, delete only for the owner.
     }
   }
 }

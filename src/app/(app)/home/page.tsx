@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from '@/components/ui/button';
 import { ArrowRight, CheckCircle, XCircle, SkipForward } from 'lucide-react';
 import { useUser, useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, limit } from 'firebase/firestore';
+import { collection, query, orderBy, limit, Timestamp } from 'firebase/firestore';
 import type { QuizResult } from '@/lib/types';
 import { format } from 'date-fns';
 
@@ -24,6 +24,11 @@ function PastQuizzes() {
   }, [user, firestore]);
 
   const { data: pastQuizzes, isLoading } = useCollection<QuizResult>(quizResultsQuery);
+
+  const formatDate = (timestamp: Timestamp | undefined) => {
+    if (!timestamp) return 'N/A';
+    return format(new Date(timestamp.seconds * 1000), 'PPP');
+  }
 
   if (isLoading) {
     return (
@@ -69,7 +74,7 @@ function PastQuizzes() {
           <CardHeader>
             <CardTitle>{quiz.quizTitle}</CardTitle>
             <CardDescription>
-              Taken on {quiz.completionDate ? format(new Date(quiz.completionDate.seconds * 1000), 'PPP') : 'N/A'}
+              Taken on {formatDate(quiz.completionDate)}
             </CardDescription>
           </CardHeader>
           <CardContent className="flex-grow">

@@ -13,11 +13,13 @@ import {
   ChartTooltipContent,
 } from '@/components/ui/chart';
 import { Bar, XAxis, YAxis, CartesianGrid, BarChart as RechartsBarChart } from 'recharts';
-import type { PersonalizedFeedbackOutput } from '@/ai/flows/personalized-feedback-generation';
-import type { QuizQuestion } from '@/lib/types';
+import type { PersonalizedFeedbackOutput, PersonalizedFeedbackInput } from '@/ai/flows/personalized-feedback-generation';
+import type { QuizQuestion, UserProfile } from '@/lib/types';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { cn } from '@/lib/utils';
-import { useUser } from '@/firebase';
+import { useDoc, useFirestore, useUser, useMemoFirebase } from '@/firebase';
+import { doc } from 'firebase/firestore';
+
 
 export type DetailedQuizResults = {
     quizId: string;
@@ -48,9 +50,19 @@ export function QuizResults({ results, isReviewMode = false }: ResultsProps) {
   const [loadingFeedback, setLoadingFeedback] = React.useState(true);
   const [errorFeedback, setErrorFeedback] = React.useState<string | null>(null);
   const { user } = useUser();
+  const firestore = useFirestore();
+
+  const userProfileRef = useMemoFirebase(() => {
+    if (!user) return null;
+    return doc(firestore, 'users', user.uid);
+  }, [user, firestore]);
+
+  const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
 
   React.useEffect(() => {
     async function fetchFeedback() {
+      if (!userProfile) return;
+
       if (results.incorrectQuestions.length === 0) {
         setAiFeedback({
             overallFeedback: "Amazing work! You got a perfect score. Keep up the fantastic effort!",
@@ -60,10 +72,10 @@ export function QuizResults({ results, isReviewMode = false }: ResultsProps) {
         return;
       }
       
-      const feedbackPayload = {
-        userName: user?.displayName || 'Student',
-        userAge: 25, // This should be fetched from user profile
-        userState: 'CA', // This should be fetched from user profile
+      const feedbackPayload: PersonalizedFeedbackInput = {
+        userName: userProfile.name,
+        userAge: userProfile.age,
+        userState: userProfile.state,
         incorrectQuestions: results.incorrectQuestions,
       };
       
@@ -81,8 +93,10 @@ export function QuizResults({ results, isReviewMode = false }: ResultsProps) {
         setLoadingFeedback(false);
       }
     }
-    fetchFeedback();
-  }, [results.incorrectQuestions, user]);
+    if (userProfile) {
+        fetchFeedback();
+    }
+  }, [results.incorrectQuestions, userProfile]);
 
   const chartData = Object.entries(results.categoryScores).map(([name, score]) => ({
     name,
@@ -100,30 +114,32 @@ export function QuizResults({ results, isReviewMode = false }: ResultsProps) {
     const userAnswer = results.userAnswers[q.id.toString()];
     const isCorrect = userAnswer === q.answer;
     const isIncorrect = userAnswer && !isCorrect;
-    const feedback = isIncorrect ? aiFeedback?.questionFeedback.find(f => f.questionText === q.text) : undefined;
+    const feedbackForQuestion = aiFeedback?.questionFeedback.find(f => f.questionText === q.text);
     
     return {
       ...q,
       userAnswer,
       isCorrect,
       isIncorrect,
-      feedback: feedback?.feedback,
-      resourceQuery: feedback?.resourceQuery
+      feedback: feedbackForQuestion?.feedback,
+      resourceQuery: feedbackForQuestion?.resourceQuery
     };
   });
 
 
   return (
     <div className="space-y-6 animate-in fade-in-50">
-      <Card className="text-center">
-        <CardHeader>
-          <CardTitle className="text-2xl">Quiz Complete!</CardTitle>
-          <CardDescription>Your final score is</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="font-bold text-6xl text-primary">{results.score}</p>
-        </CardContent>
-      </Card>
+       {!isReviewMode && (
+         <Card className="text-center">
+            <CardHeader>
+              <CardTitle className="text-2xl">Quiz Complete!</CardTitle>
+              <CardDescription>Your final score is</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="font-bold text-6xl text-primary">{results.score}</p>
+            </CardContent>
+          </Card>
+       )}
 
       <div className="grid md:grid-cols-3 gap-4">
         <Card className="flex flex-col items-center justify-center p-6">
@@ -186,70 +202,72 @@ export function QuizResults({ results, isReviewMode = false }: ResultsProps) {
         </CardContent>
       </Card>
 
-      {isReviewMode && (
-         <Card>
-            <CardHeader>
-              <CardTitle>Full Quiz Review</CardTitle>
-              <CardDescription>A question-by-question breakdown of your answers.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <Accordion type="single" collapsible className="w-full">
-                    {allQuestionDetails.map((item, index) => (
-                        <AccordionItem value={`item-${index}`} key={index}>
-                            <AccordionTrigger>
-                                <div className="flex items-center gap-3 text-left">
-                                    {item.isCorrect ? <CheckCircle className="h-5 w-5 text-green-500 shrink-0" /> : item.isIncorrect ? <XCircle className="h-5 w-5 text-red-500 shrink-0" /> : <HelpCircle className="h-5 w-5 text-muted-foreground shrink-0" />}
-                                    <span className="flex-1">{item.questionText}</span>
-                                </div>
-                            </AccordionTrigger>
-                            <AccordionContent className="space-y-4">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <p className="text-sm font-semibold mb-1">Your Answer</p>
-                                        <p className={cn("text-sm p-2 rounded-md border", 
-                                          item.isCorrect && "bg-green-500/10 text-green-700 border-green-500/20",
-                                          item.isIncorrect && "bg-red-500/10 text-red-700 border-red-500/20",
-                                          !item.userAnswer && "bg-secondary"
-                                        )}>
-                                          {item.userAnswer || 'Not Answered'}
-                                        </p>
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-semibold mb-1">Correct Answer</p>
-                                        <p className="text-sm p-2 rounded-md bg-green-500/10 text-green-700 border border-green-500/20">{item.correctAnswer}</p>
-                                    </div>
-                                </div>
-                                {item.isIncorrect && (
-                                  <>
-                                    <div>
-                                        <p className="text-sm font-semibold mb-1">Explanation</p>
-                                        {item.feedback ? (
-                                             <p className="text-sm text-foreground/80">{item.feedback}</p>
-                                        ) : (
-                                            <Skeleton className="h-4 w-full" />
-                                        )}
-                                    </div>
-                                    {item.resourceQuery && (
-                                        <Button variant="outline" size="sm" asChild>
-                                            <a href={`https://www.google.com/search?q=${encodeURIComponent(item.resourceQuery)}`} target="_blank" rel="noopener noreferrer">
-                                                Learn more <ExternalLink className="ml-2 h-4 w-4" />
-                                            </a>
-                                        </Button>
-                                    )}
-                                  </>
-                                )}
-                            </AccordionContent>
-                        </AccordionItem>
-                    ))}
-                </Accordion>
-            </CardContent>
-         </Card>
-      )}
+       <Card>
+          <CardHeader>
+            <CardTitle>Full Quiz Review</CardTitle>
+            <CardDescription>A question-by-question breakdown of your answers.</CardDescription>
+          </CardHeader>
+          <CardContent>
+              <Accordion type="single" collapsible className="w-full">
+                  {allQuestionDetails.map((item, index) => (
+                      <AccordionItem value={`item-${index}`} key={index}>
+                          <AccordionTrigger>
+                              <div className="flex items-center gap-3 text-left">
+                                  {item.isCorrect ? <CheckCircle className="h-5 w-5 text-green-500 shrink-0" /> : item.isIncorrect ? <XCircle className="h-5 w-5 text-red-500 shrink-0" /> : <HelpCircle className="h-5 w-5 text-muted-foreground shrink-0" />}
+                                  <span className="flex-1">{item.text}</span>
+                              </div>
+                          </AccordionTrigger>
+                          <AccordionContent className="space-y-4">
+                              <div className="grid grid-cols-2 gap-4">
+                                  <div>
+                                      <p className="text-sm font-semibold mb-1">Your Answer</p>
+                                      <p className={cn("text-sm p-2 rounded-md border", 
+                                        item.isCorrect && "bg-green-500/10 text-green-700 border-green-500/20",
+                                        item.isIncorrect && "bg-red-500/10 text-red-700 border-red-500/20",
+                                        !item.userAnswer && "bg-secondary"
+                                      )}>
+                                        {item.userAnswer || 'Not Answered'}
+                                      </p>
+                                  </div>
+                                  <div>
+                                      <p className="text-sm font-semibold mb-1">Correct Answer</p>
+                                      <p className="text-sm p-2 rounded-md bg-green-500/10 text-green-700 border border-green-500/20">{item.answer}</p>
+                                  </div>
+                              </div>
+                              {item.isIncorrect && (
+                                <>
+                                  <div>
+                                      <p className="text-sm font-semibold mb-1">Explanation</p>
+                                      {loadingFeedback ? (
+                                           <Skeleton className="h-4 w-full" />
+                                      ) : item.feedback ? (
+                                           <p className="text-sm text-foreground/80">{item.feedback}</p>
+                                      ) : (
+                                        <p className="text-sm text-muted-foreground italic">No explanation available.</p>
+                                      )}
+                                  </div>
+                                  {item.resourceQuery && (
+                                      <Button variant="outline" size="sm" asChild>
+                                          <a href={`https://www.google.com/search?q=${encodeURIComponent(item.resourceQuery)}`} target="_blank" rel="noopener noreferrer">
+                                              Learn more <ExternalLink className="ml-2 h-4 w-4" />
+                                          </a>
+                                      </Button>
+                                  )}
+                                </>
+                              )}
+                          </AccordionContent>
+                      </AccordionItem>
+                  ))}
+              </Accordion>
+          </CardContent>
+       </Card>
 
       <div className="flex gap-4">
-        <Button asChild className="flex-1">
-            <Link href={`/quiz/${results.quizId}`}>Try Again</Link>
-        </Button>
+        {!isReviewMode && (
+          <Button asChild className="flex-1">
+              <Link href={`/quiz/${results.quizId}`}>Try Again</Link>
+          </Button>
+        )}
         <Button asChild variant="outline" className="flex-1">
             <Link href="/">Back to Home</Link>
         </Button>
