@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { Clock, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Clock, ArrowRight, ArrowLeft, SkipForward, Star } from 'lucide-react';
 import type { Quiz, QuizQuestion } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import {
@@ -31,8 +31,25 @@ export function QuizClient({ quiz, questions }: QuizClientProps) {
   const [selectedAnswers, setSelectedAnswers] = React.useState<Record<string, string>>({});
   const [timeLeft, setTimeLeft] = React.useState(120); // 2 minutes
   const [showTimeoutAlert, setShowTimeoutAlert] = React.useState(false);
+  const [currentScore, setCurrentScore] = React.useState(0);
 
   const timerRef = React.useRef<NodeJS.Timeout | null>(null);
+
+  const calculateScore = React.useCallback((answers: Record<string, string>) => {
+    let correct = 0;
+    let incorrect = 0;
+    questions.forEach((q) => {
+        const userAnswer = answers[q.id.toString()];
+        if (userAnswer) {
+            if (userAnswer === q.answer) {
+                correct++;
+            } else {
+                incorrect++;
+            }
+        }
+    });
+    return Math.max(0, (correct * 3) - (incorrect * 1));
+  }, [questions]);
 
   const finishQuiz = React.useCallback(() => {
     if (timerRef.current) {
@@ -67,13 +84,14 @@ export function QuizClient({ quiz, questions }: QuizClientProps) {
 
     const answeredCount = Object.keys(selectedAnswers).length;
     const skippedQuestionsCount = questions.length - answeredCount;
-    const finalScore = Math.max(0, (correctAnswersCount * 3) - (incorrectAnswersCount * 1));
+    const finalScore = calculateScore(selectedAnswers);
     
     const finalCategoryScores: Record<string, number> = {};
     for (const category in categoryTotals) {
         const questionsInCategoryAnswered = questions.filter(q => q.category === category && selectedAnswers[q.id.toString()]).length;
         if(questionsInCategoryAnswered > 0) {
-              finalCategoryScores[category] = (categoryScores[q.category] / questionsInCategoryAnswered) * 100;
+              const correctInCategory = categoryScores[category] || 0;
+              finalCategoryScores[category] = (correctInCategory / questionsInCategoryAnswered) * 100;
         } else {
             finalCategoryScores[category] = 0;
         }
@@ -100,7 +118,7 @@ export function QuizClient({ quiz, questions }: QuizClientProps) {
     
     sessionStorage.setItem('quizResults', JSON.stringify(results));
     router.push(`/quiz/${quiz.id}/results`);
-  }, [selectedAnswers, questions, quiz.id, quiz.title, router]);
+  }, [selectedAnswers, questions, quiz.id, quiz.title, router, calculateScore]);
 
 
   React.useEffect(() => {
@@ -123,7 +141,9 @@ export function QuizClient({ quiz, questions }: QuizClientProps) {
   }, []);
 
   const handleSelectAnswer = (questionId: number, answer: string) => {
-    setSelectedAnswers((prev) => ({ ...prev, [questionId.toString()]: answer }));
+    const newAnswers = { ...selectedAnswers, [questionId.toString()]: answer };
+    setSelectedAnswers(newAnswers);
+    setCurrentScore(calculateScore(newAnswers));
   };
   
   const handleNext = () => {
@@ -133,6 +153,11 @@ export function QuizClient({ quiz, questions }: QuizClientProps) {
   const handlePrev = () => {
     setCurrentQuestionIndex((prev) => (prev - 1 + questions.length) % questions.length);
   };
+  
+  const handleSkip = () => {
+    // Just move to the next question without selecting an answer.
+    handleNext();
+  }
 
   const currentQuestion = questions[currentQuestionIndex];
   const progress = (Object.keys(selectedAnswers).length / questions.length) * 100;
@@ -145,9 +170,15 @@ export function QuizClient({ quiz, questions }: QuizClientProps) {
         <CardHeader>
           <div className="flex justify-between items-center mb-4">
             <CardTitle className="text-2xl">{quiz.title}</CardTitle>
-            <div className="flex items-center gap-2 font-semibold text-accent">
-              <Clock className="h-5 w-5" />
-              <span>{String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}</span>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 font-semibold text-primary">
+                <Star className="h-5 w-5" />
+                <span>{currentScore}</span>
+              </div>
+              <div className="flex items-center gap-2 font-semibold text-accent">
+                <Clock className="h-5 w-5" />
+                <span>{String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}</span>
+              </div>
             </div>
           </div>
           <Progress value={progress} />
@@ -155,7 +186,7 @@ export function QuizClient({ quiz, questions }: QuizClientProps) {
         <CardContent>
           {currentQuestion && (
             <div key={currentQuestion.id} className="animate-in fade-in-50">
-              <p className="text-sm text-muted-foreground mb-2">Question {currentQuestionIndex + 1} of {questions.length} ({currentQuestion.category})</p>
+              <p className="text-sm text-muted-foreground mb-2">({currentQuestion.category})</p>
               <h2 className="text-lg font-semibold mb-6">{currentQuestion.text}</h2>
               <RadioGroup
                 onValueChange={(value) => handleSelectAnswer(currentQuestion.id, value)}
@@ -181,14 +212,14 @@ export function QuizClient({ quiz, questions }: QuizClientProps) {
         </CardContent>
         <CardFooter className="flex justify-between">
             <div className="flex gap-2">
-                <Button
-                    variant="outline"
-                    onClick={handlePrev}
-                >
+                <Button variant="outline" onClick={handlePrev}>
                     <ArrowLeft className="mr-2 h-4 w-4"/> Previous
                 </Button>
                 <Button onClick={handleNext}>
                     Next <ArrowRight className="ml-2 h-4 w-4"/>
+                </Button>
+                <Button variant="ghost" onClick={handleSkip}>
+                    Skip <SkipForward className="ml-2 h-4 w-4"/>
                 </Button>
             </div>
              <Button onClick={finishQuiz} variant="destructive">Finish Quiz</Button>
