@@ -27,8 +27,8 @@ export const Quizzes: Quiz[] = [
     category: 'Mixed',
     questionsCount: 10,
     duration: 120, // in seconds
-    image: getPlaceholderImage('quiz-history')?.imageUrl || '',
-    imageHint: 'history ancient',
+    image: getPlaceholderImage('quiz-upsc')?.imageUrl || '',
+    imageHint: 'library study',
   },
   {
     id: 'neet-bio-1',
@@ -37,8 +37,8 @@ export const Quizzes: Quiz[] = [
     category: 'Science',
     questionsCount: 10,
     duration: 120,
-    image: getPlaceholderImage('quiz-science')?.imageUrl || '',
-    imageHint: 'science lab',
+    image: getPlaceholderImage('quiz-neet')?.imageUrl || '',
+    imageHint: 'DNA biology',
   }
 ];
 

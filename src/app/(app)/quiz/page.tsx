@@ -4,7 +4,7 @@ import { PageHeader } from '@/components/shared/page-header';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Quizzes } from '@/lib/mock-data';
-import { Clock, HelpCircle } from 'lucide-react';
+import { Clock } from 'lucide-react';
 
 export default function QuizSelectionPage() {
   return (
@@ -30,11 +30,7 @@ export default function QuizSelectionPage() {
               <CardDescription>{quiz.description}</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex justify-between text-sm text-muted-foreground">
-                <div className="flex items-center gap-1">
-                  <HelpCircle className="h-4 w-4" />
-                  <span>{quiz.questionsCount} questions</span>
-                </div>
+              <div className="flex justify-end text-sm text-muted-foreground">
                 <div className="flex items-center gap-1">
                   <Clock className="h-4 w-4" />
                   <span>{quiz.duration / 60} minutes</span>
