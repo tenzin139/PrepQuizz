@@ -8,7 +8,7 @@ import { Inter } from 'next/font/google';
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 
 export const metadata: Metadata = {
-  title: 'UPSC NEET Prep',
+  title: 'Prep Quiz',
   description: 'Your personalized quiz prep platform for UPSC and NEET.',
 };
 

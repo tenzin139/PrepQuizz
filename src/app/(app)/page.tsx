@@ -101,7 +101,7 @@ function PastQuizzes() {
 }
 
 
-export default function HomePage() {
+export default function RedirectPage() {
   const { user } = useUser();
 
   return (
