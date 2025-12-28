@@ -159,8 +159,12 @@ export function QuizClient({ quiz, questions }: QuizClientProps) {
   };
   
   const handleNext = () => {
-    setIsAnswered(false);
-    setCurrentQuestionIndex((prev) => (prev + 1) % questions.length);
+    if (currentQuestionIndex < questions.length - 1) {
+        setIsAnswered(false);
+        setCurrentQuestionIndex((prev) => prev + 1);
+    } else {
+        finishQuiz();
+    }
   };
 
   const handlePrev = () => {
@@ -202,8 +206,8 @@ export function QuizClient({ quiz, questions }: QuizClientProps) {
                     </TooltipContent>
                 </Tooltip>
               </div>
-              <div className="flex items-center gap-2 font-semibold text-accent">
-                <Clock className="h-5 w-5" />
+              <div className="flex items-center gap-2 font-semibold text-accent text-lg">
+                <Clock className="h-6 w-6" />
                 <span>{String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}</span>
               </div>
             </div>
@@ -248,13 +252,10 @@ export function QuizClient({ quiz, questions }: QuizClientProps) {
         </CardContent>
         <CardFooter className="flex justify-between">
             <div className="flex gap-2">
-                <Button variant="outline" onClick={handlePrev} disabled={currentQuestionIndex === 0}>
-                    <ArrowLeft className="mr-2 h-4 w-4"/> Previous
-                </Button>
                 <Button onClick={handleNext}>
-                    Next <ArrowRight className="ml-2 h-4 w-4"/>
+                    {currentQuestionIndex === questions.length - 1 ? 'Finish' : 'Next'} <ArrowRight className="ml-2 h-4 w-4"/>
                 </Button>
-                <Button variant="ghost" onClick={handleSkip}>
+                <Button variant="outline" onClick={handleSkip} disabled={isAnswered}>
                     Skip <SkipForward className="ml-2 h-4 w-4"/>
                 </Button>
             </div>
