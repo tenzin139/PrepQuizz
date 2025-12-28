@@ -2,13 +2,15 @@
 import { PageHeader } from '@/components/shared/page-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Medal, BookOpen } from 'lucide-react';
+import { Medal, BookOpen, Edit } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { useUser, useFirestore, useCollection, useDoc, useMemoFirebase } from '@/firebase';
 import { collection, query, getDocs, doc } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { QuizResult } from '@/lib/types';
+import { Button } from '@/components/ui/button';
+import { EditProfileDialog } from './_components/edit-profile-dialog';
 
 
 function AccountStatistics() {
@@ -95,6 +97,8 @@ type UserProfile = {
 export default function AccountPage() {
     const { user } = useUser();
     const firestore = useFirestore();
+    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+
 
     const userProfileRef = useMemoFirebase(() => {
         if (!user) return null;
@@ -112,17 +116,25 @@ export default function AccountPage() {
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-1 space-y-6">
           <Card>
-            <CardHeader className="flex flex-row items-center gap-4">
-              <Avatar className="h-20 w-20">
-                <AvatarImage src={userProfile?.profileImageURL} alt={userProfile?.name || ''} />
-                <AvatarFallback className="text-3xl">{userProfile?.name?.charAt(0) || 'U'}</AvatarFallback>
-              </Avatar>
-              <div>
-                <CardTitle className="text-2xl">{isProfileLoading ? <Skeleton className="h-8 w-32" /> : userProfile?.name}</CardTitle>
-                <div className="text-sm text-muted-foreground">
-                    {isProfileLoading ? <Skeleton className="h-4 w-24 mt-1" /> : `${userProfile?.age} years old, from ${userProfile?.state}`}
+            <CardHeader>
+                <div className='flex justify-between items-start'>
+                    <div className="flex flex-row items-center gap-4">
+                        <Avatar className="h-20 w-20">
+                            <AvatarImage src={userProfile?.profileImageURL} alt={userProfile?.name || ''} />
+                            <AvatarFallback className="text-3xl">{userProfile?.name?.charAt(0) || 'U'}</AvatarFallback>
+                        </Avatar>
+                        <div>
+                            <CardTitle className="text-2xl">{isProfileLoading ? <Skeleton className="h-8 w-32" /> : userProfile?.name}</CardTitle>
+                            <div className="text-sm text-muted-foreground">
+                                {isProfileLoading ? <Skeleton className="h-4 w-24 mt-1" /> : `${userProfile?.age} years old, from ${userProfile?.state}`}
+                            </div>
+                        </div>
+                    </div>
+                     <Button variant="ghost" size="icon" onClick={() => setIsEditDialogOpen(true)}>
+                        <Edit className="h-5 w-5" />
+                        <span className="sr-only">Edit Profile</span>
+                    </Button>
                 </div>
-              </div>
             </CardHeader>
           </Card>
           <AccountStatistics />
@@ -141,6 +153,13 @@ export default function AccountPage() {
             </Card>
         </div>
       </div>
+       {userProfile && (
+        <EditProfileDialog
+          open={isEditDialogOpen}
+          onOpenChange={setIsEditDialogOpen}
+          userProfile={userProfile}
+        />
+      )}
     </div>
   );
 }
