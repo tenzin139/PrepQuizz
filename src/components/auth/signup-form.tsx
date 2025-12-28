@@ -9,9 +9,9 @@ import { Label } from '@/components/ui/label';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { getAvatarPlaceholders } from '@/lib/placeholder-images';
-import { useAuth, useFirestore, setDocumentNonBlocking } from '@/firebase';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { doc } from 'firebase/firestore';
+import { useAuth, useFirestore } from '@/firebase';
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 
@@ -47,6 +47,11 @@ export function SignupForm() {
       const user = userCredential.user;
 
       if (user) {
+        await updateProfile(user, {
+            displayName: name,
+            photoURL: avatarUrl
+        });
+
         const userProfile = {
           id: user.uid,
           name,
@@ -56,7 +61,9 @@ export function SignupForm() {
         };
 
         const userDocRef = doc(firestore, `users/${user.uid}`);
-        setDocumentNonBlocking(userDocRef, userProfile, { merge: true });
+        // This is a blocking call, but it's okay here since it's part of signup
+        await setDoc(userDocRef, userProfile, { merge: true });
+        
         router.push('/');
       }
     } catch (error: any) {

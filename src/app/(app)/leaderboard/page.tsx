@@ -1,12 +1,34 @@
+'use client';
 import { PageHeader } from '@/components/shared/page-header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { LeaderboardData } from '@/lib/mock-data';
 import { Trophy } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { collection, query, orderBy, limit } from 'firebase/firestore';
+import { Skeleton } from '@/components/ui/skeleton';
+
+type LeaderboardEntry = {
+  id: string;
+  name: string;
+  score: number;
+  profileImageURL?: string;
+  state: string;
+};
 
 export default function LeaderboardPage() {
+  const firestore = useFirestore();
+
+  const leaderboardQuery = useMemoFirebase(() => {
+    return query(collection(firestore, 'leaderboard_entries'), orderBy('score', 'desc'), limit(20));
+  }, [firestore]);
+
+  // Note: This is not a real-time subscription, it's a one-time fetch for simplicity.
+  // For a live leaderboard, you would use `useCollection`.
+  // However, `useCollection` would require a more complex setup to merge user profile data.
+  const { data: leaderboardData, isLoading } = useCollection<LeaderboardEntry>(leaderboardQuery);
+
   return (
     <div>
       <PageHeader
@@ -28,25 +50,39 @@ export default function LeaderboardPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {LeaderboardData.map((user) => (
-                <TableRow key={user.rank} className={cn(user.name === 'Alex Doe' && 'bg-secondary')}>
+              {isLoading && [...Array(5)].map((_, i) => (
+                <TableRow key={i}>
+                  <TableCell><Skeleton className="h-5 w-5" /></TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      <Skeleton className="h-8 w-8 rounded-full" />
+                      <Skeleton className="h-5 w-32" />
+                    </div>
+                  </TableCell>
+                  <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                  <TableCell className="text-right"><Skeleton className="h-5 w-12 ml-auto" /></TableCell>
+                </TableRow>
+              ))}
+              {leaderboardData?.map((user, index) => (
+                <TableRow key={user.id}>
                   <TableCell className="font-medium">
-                    <div className="flex items-center gap-2">
-                    {user.rank <= 3 ? (
+                    <div className="flex items-center justify-center w-5">
+                      {index < 3 ? (
                         <Trophy className={cn(
-                            "h-5 w-5",
-                            user.rank === 1 && "text-yellow-400",
-                            user.rank === 2 && "text-gray-400",
-                            user.rank === 3 && "text-amber-600"
+                          "h-5 w-5",
+                          index === 0 && "text-yellow-400",
+                          index === 1 && "text-gray-400",
+                          index === 2 && "text-amber-600"
                         )} />
-                    ) : (
-                        <span className="w-5 text-center">{user.rank}</span>
-                    )}
+                      ) : (
+                        <span>{index + 1}</span>
+                      )}
                     </div>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <Avatar className="h-8 w-8">
+                        <AvatarImage src={user.profileImageURL} alt={user.name} />
                         <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
                       </Avatar>
                       <span>{user.name}</span>

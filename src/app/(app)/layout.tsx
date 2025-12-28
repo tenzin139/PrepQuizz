@@ -1,3 +1,4 @@
+'use client';
 import { SidebarNav } from '@/components/shared/sidebar-nav';
 import {
   SidebarProvider,
@@ -9,13 +10,33 @@ import {
   SidebarFooter,
 } from '@/components/ui/sidebar';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { LoggedInUser } from '@/lib/mock-data';
+import { useUser, useAuth } from '@/firebase';
 import { AppLogo } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { LogOut } from 'lucide-react';
 import Link from 'next/link';
+import { signOut } from 'firebase/auth';
+import { useRouter } from 'next/navigation';
+
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
+  const { user, isUserLoading } = useUser();
+  const auth = useAuth();
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    await signOut(auth);
+    router.push('/login');
+  };
+
+  if (isUserLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <p>Loading...</p>
+      </div>
+    );
+  }
+
   return (
     <SidebarProvider>
       <Sidebar>
@@ -31,18 +52,16 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <SidebarFooter>
           <div className="flex items-center gap-3">
             <Avatar>
-              <AvatarImage src={LoggedInUser.profilePicture} alt={LoggedInUser.name} />
-              <AvatarFallback>{LoggedInUser.name.charAt(0)}</AvatarFallback>
+              <AvatarImage src={user?.photoURL || undefined} alt={user?.displayName || ''} />
+              <AvatarFallback>{user?.displayName?.charAt(0) || 'U'}</AvatarFallback>
             </Avatar>
             <div className="flex flex-col">
-              <span className="font-semibold">{LoggedInUser.name}</span>
-              <span className="text-sm text-muted-foreground">{LoggedInUser.state}</span>
+              <span className="font-semibold">{user?.displayName || 'User'}</span>
+              <span className="text-sm text-muted-foreground">{user?.email}</span>
             </div>
-            <Button variant="ghost" size="icon" className="ml-auto" asChild>
-              <Link href="/login">
+            <Button variant="ghost" size="icon" className="ml-auto" onClick={handleLogout}>
                 <LogOut />
                 <span className="sr-only">Log out</span>
-              </Link>
             </Button>
           </div>
         </SidebarFooter>

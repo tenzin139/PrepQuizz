@@ -7,6 +7,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PageHeader } from '@/components/shared/page-header';
 import { Button } from '@/components/ui/button';
+import { useFirestore, useUser, addDocumentNonBlocking } from '@/firebase';
+import { collection, serverTimestamp } from 'firebase/firestore';
 
 function ResultsFallback() {
     return (
@@ -31,14 +33,15 @@ export default function ResultsPage() {
   const [results, setResults] = useState<DetailedQuizResults | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const firestore = useFirestore();
+  const { user } = useUser();
+
   useEffect(() => {
     const resultsData = sessionStorage.getItem('quizResults');
     if (resultsData) {
       try {
         const parsedData = JSON.parse(resultsData);
         setResults(parsedData);
-        // Optional: Clear the data after reading to prevent re-using old results
-        // sessionStorage.removeItem('quizResults');
       } catch (e) {
         console.error('Failed to parse quiz results:', e);
         setError('There was an error loading your results. The data was corrupted.');
@@ -47,6 +50,36 @@ export default function ResultsPage() {
       setError('No quiz results found. Please take a quiz to see your results.');
     }
   }, []);
+
+  useEffect(() => {
+    if (results && user && firestore) {
+      const {
+        quizId,
+        quizTitle,
+        score,
+        correctAnswers,
+        incorrectAnswers,
+        skippedQuestions,
+        totalQuestions,
+      } = results;
+
+      const quizResultData = {
+        userId: user.uid,
+        quizId,
+        quizTitle,
+        score,
+        correctAnswers,
+        incorrectAnswers,
+        skippedAnswers: skippedQuestions,
+        totalQuestions,
+        completionTime: results.completionTime,
+        completionDate: serverTimestamp(),
+      };
+      
+      const resultsColRef = collection(firestore, `users/${user.uid}/quiz_results`);
+      addDocumentNonBlocking(resultsColRef, quizResultData);
+    }
+  }, [results, user, firestore]);
 
   if (error) {
     return (

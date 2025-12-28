@@ -1,3 +1,5 @@
+import { Timestamp } from 'firebase/firestore';
+
 export type QuizQuestion = {
   id: number;
   category: string;
@@ -18,16 +20,18 @@ export type Quiz = {
   imageHint: string;
 };
 
-export type PastQuiz = {
-  id: string;
+export type QuizResult = {
+  id?: string;
+  userId: string;
+  quizId: string;
   quizTitle: string;
-  date: string;
   score: number;
-  correct: number;
-  incorrect: number;
-  skipped: number;
-  total: number;
-  feedback: string;
+  correctAnswers: number;
+  incorrectAnswers: number;
+  skippedAnswers: number;
+  totalQuestions: number;
+  completionTime: number;
+  completionDate?: Timestamp;
 };
 
 export type LeaderboardEntry = {

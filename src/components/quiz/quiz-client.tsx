@@ -36,7 +36,8 @@ export function QuizClient({ quiz, questions }: QuizClientProps) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = React.useState(0);
   const [selectedAnswers, setSelectedAnswers] = React.useState<Record<string, string>>({});
   const [isAnswered, setIsAnswered] = React.useState(false);
-  const [timeLeft, setTimeLeft] = React.useState(120); // 2 minutes
+  const [timeLeft, setTimeLeft] = React.useState(quiz.duration);
+  const [startTime] = React.useState(Date.now());
   const [showTimeoutAlert, setShowTimeoutAlert] = React.useState(false);
   const [currentScore, setCurrentScore] = React.useState(0);
 
@@ -92,6 +93,7 @@ export function QuizClient({ quiz, questions }: QuizClientProps) {
     const answeredCount = Object.keys(selectedAnswers).length;
     const skippedQuestionsCount = questions.length - answeredCount;
     const finalScore = calculateScore(selectedAnswers);
+    const completionTime = (Date.now() - startTime) / 1000;
     
     const finalCategoryScores: Record<string, number> = {};
     for (const category in categoryTotals) {
@@ -121,11 +123,12 @@ export function QuizClient({ quiz, questions }: QuizClientProps) {
         })),
         allQuestions: questions,
         userAnswers: selectedAnswers,
+        completionTime,
     };
     
     sessionStorage.setItem('quizResults', JSON.stringify(results));
     router.push(`/quiz/${quiz.id}/results`);
-  }, [selectedAnswers, questions, quiz.id, quiz.title, router, calculateScore]);
+  }, [selectedAnswers, questions, quiz.id, quiz.title, router, calculateScore, startTime]);
 
 
   React.useEffect(() => {
@@ -171,7 +174,6 @@ export function QuizClient({ quiz, questions }: QuizClientProps) {
   }
 
   const currentQuestion = questions[currentQuestionIndex];
-  const progress = (Object.keys(selectedAnswers).length / questions.length) * 100;
   const minutes = Math.floor(timeLeft / 60);
   const seconds = timeLeft % 60;
   
@@ -206,7 +208,6 @@ export function QuizClient({ quiz, questions }: QuizClientProps) {
               </div>
             </div>
           </div>
-          <Progress value={progress} />
         </CardHeader>
         <CardContent>
           {currentQuestion && (
