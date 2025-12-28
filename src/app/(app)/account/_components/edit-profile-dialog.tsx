@@ -20,9 +20,10 @@ import { doc, updateDoc } from 'firebase/firestore';
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useToast } from '@/hooks/use-toast';
 import type { UserProfile } from '@/lib/types';
-import { Camera, Upload } from 'lucide-react';
+import { Camera, Upload, Trash2 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { getFirebaseErrorMessage } from '@/lib/utils';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 type EditProfileDialogProps = {
   open: boolean;
@@ -47,21 +48,24 @@ export function EditProfileDialog({ open, onOpenChange, userProfile }: EditProfi
   // File upload state
   const [selectedFile, setSelectedFile] = React.useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = React.useState<string | null>(null);
+  const [isPhotoRemoved, setIsPhotoRemoved] = React.useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
 
   React.useEffect(() => {
     setName(userProfile.name);
+    setPreviewUrl(userProfile.profileImageURL);
     setSelectedFile(null);
-    setPreviewUrl(null);
     setShowCamera(false);
-  }, [open, userProfile.name]);
+    setIsPhotoRemoved(false);
+  }, [open, userProfile.name, userProfile.profileImageURL]);
 
 
   React.useEffect(() => {
     if (showCamera) {
       setPreviewUrl(null);
       setSelectedFile(null);
+      setIsPhotoRemoved(false);
       const getCameraPermission = async () => {
         try {
           const stream = await navigator.mediaDevices.getUserMedia({ video: true });
@@ -99,6 +103,7 @@ export function EditProfileDialog({ open, onOpenChange, userProfile }: EditProfi
       setShowCamera(false);
       setSelectedFile(file);
       setPreviewUrl(URL.createObjectURL(file));
+      setIsPhotoRemoved(false);
     }
   };
 
@@ -106,6 +111,12 @@ export function EditProfileDialog({ open, onOpenChange, userProfile }: EditProfi
     fileInputRef.current?.click();
   };
 
+  const handleRemovePhoto = () => {
+    setSelectedFile(null);
+    setPreviewUrl(null);
+    setShowCamera(false);
+    setIsPhotoRemoved(true);
+  };
 
   const handleSave = async () => {
     if (!user || !auth.currentUser) {
@@ -130,29 +141,24 @@ export function EditProfileDialog({ open, onOpenChange, userProfile }: EditProfi
     try {
       let photoURL = userProfile.profileImageURL;
 
-      // If a new photo was uploaded, handle the upload to Firebase Storage
-      if (selectedFile) {
+      if (isPhotoRemoved) {
+        photoURL = '';
+      } else if (selectedFile) {
         const storage = getStorage();
-        // Create a storage reference
         const filePath = `profile-images/${user.uid}/${Date.now()}-${selectedFile.name}`;
         const newPhotoRef = storageRef(storage, filePath);
-
-        // Upload the file
         const snapshot = await uploadBytes(newPhotoRef, selectedFile);
-        
-        // Get the download URL
         photoURL = await getDownloadURL(snapshot.ref);
       }
-      // Note: Capturing from camera is not implemented yet, so we only handle file uploads.
+      // Note: Capturing from camera is not implemented yet.
 
       const updates: Promise<any>[] = [];
 
-      // Update Firebase Auth profile
-       if (name !== userProfile.name || photoURL !== userProfile.profileImageURL) {
+      // Only update if there are actual changes
+      if (name !== auth.currentUser.displayName || photoURL !== auth.currentUser.photoURL) {
          updates.push(updateProfile(auth.currentUser, { displayName: name, photoURL }));
       }
 
-      // Update Firestore profile document
       const userDocRef = doc(firestore, 'users', user.uid);
       updates.push(updateDoc(userDocRef, { name, profileImageURL: photoURL }));
 
@@ -192,24 +198,35 @@ export function EditProfileDialog({ open, onOpenChange, userProfile }: EditProfi
           <div className="space-y-2">
             <Label>Profile Picture</Label>
              <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/png, image/jpeg, image/jpg" />
-            <div className="flex gap-2">
-                <Button variant="outline" className="flex-1" onClick={() => setShowCamera(!showCamera)}>
+            <div className="grid grid-cols-3 gap-2">
+                <Button variant="outline" onClick={() => setShowCamera(!showCamera)}>
                     <Camera className="mr-2 h-4 w-4" />
-                    {showCamera ? 'Close Camera' : 'Take Photo'}
+                    {showCamera ? 'Close' : 'Camera'}
                 </Button>
-                 <Button variant="outline" className="flex-1" onClick={handleUploadClick}>
+                 <Button variant="outline" onClick={handleUploadClick}>
                     <Upload className="mr-2 h-4 w-4" />
-                    Upload Photo
+                    Upload
+                </Button>
+                <Button variant="outline" onClick={handleRemovePhoto}>
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Remove
                 </Button>
             </div>
           </div>
 
-          {previewUrl && (
-            <div className='space-y-2'>
+          <div className='space-y-2'>
               <Label>Image Preview</Label>
-              <Image src={previewUrl} alt="Image preview" width={500} height={281} className="w-full aspect-video rounded-md object-cover bg-muted" />
-            </div>
-          )}
+              <div className="w-full aspect-video rounded-md bg-muted flex items-center justify-center">
+                 {previewUrl && !isPhotoRemoved ? (
+                    <Image src={previewUrl} alt="Image preview" width={500} height={281} className="w-full h-full object-cover rounded-md" />
+                 ) : isPhotoRemoved || !previewUrl ? (
+                    <Avatar className='h-32 w-32 text-4xl'>
+                       <AvatarFallback>{name?.charAt(0) || 'U'}</AvatarFallback>
+                    </Avatar>
+                 ) : null}
+              </div>
+          </div>
+
 
           {showCamera && (
             <div className='space-y-2'>
