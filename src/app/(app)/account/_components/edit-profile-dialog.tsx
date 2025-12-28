@@ -22,6 +22,7 @@ import { useToast } from '@/hooks/use-toast';
 import type { UserProfile } from '@/lib/types';
 import { Camera, Upload } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { getFirebaseErrorMessage } from '@/lib/utils';
 
 type EditProfileDialogProps = {
   open: boolean;
@@ -107,7 +108,15 @@ export function EditProfileDialog({ open, onOpenChange, userProfile }: EditProfi
 
 
   const handleSave = async () => {
-    if (!user || !name) {
+    if (!user || !auth.currentUser) {
+      toast({
+        variant: 'destructive',
+        title: 'Authentication Error',
+        description: 'You must be logged in to update your profile.',
+      });
+      return;
+    }
+    if (!name) {
       toast({
         variant: 'destructive',
         title: 'Validation Error',
@@ -115,6 +124,7 @@ export function EditProfileDialog({ open, onOpenChange, userProfile }: EditProfi
       });
       return;
     }
+
 
     setIsSaving(true);
     try {
@@ -124,7 +134,7 @@ export function EditProfileDialog({ open, onOpenChange, userProfile }: EditProfi
       if (selectedFile) {
         const storage = getStorage();
         // Create a storage reference
-        const filePath = `profile-images/${user.uid}/${selectedFile.name}`;
+        const filePath = `profile-images/${user.uid}/${Date.now()}-${selectedFile.name}`;
         const newPhotoRef = storageRef(storage, filePath);
 
         // Upload the file
@@ -138,7 +148,7 @@ export function EditProfileDialog({ open, onOpenChange, userProfile }: EditProfi
       const updates: Promise<any>[] = [];
 
       // Update Firebase Auth profile
-      if (auth.currentUser && (name !== userProfile.name || photoURL !== userProfile.profileImageURL)) {
+       if (name !== userProfile.name || photoURL !== userProfile.profileImageURL) {
          updates.push(updateProfile(auth.currentUser, { displayName: name, photoURL }));
       }
 
@@ -158,7 +168,7 @@ export function EditProfileDialog({ open, onOpenChange, userProfile }: EditProfi
       toast({
         variant: 'destructive',
         title: 'Update Failed',
-        description: error.message || 'An unexpected error occurred.',
+        description: getFirebaseErrorMessage(error.code) || 'An unexpected error occurred.',
       });
     } finally {
       setIsSaving(false);

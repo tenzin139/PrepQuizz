@@ -46,28 +46,29 @@ export function QuizClient({ quiz, questions }: QuizClientProps) {
 
   const calculateScore = React.useCallback((answers: Record<string, string>, skipped: number) => {
     let score = 0;
-    // Calculate score from answered questions
-    Object.keys(answers).forEach((questionId) => {
-        const question = answeredQuestions.find(q => q.id.toString() === questionId) || questions.find(q => q.id.toString() === questionId);
-        if (question) {
-            const userAnswer = answers[questionId];
-            if (userAnswer === question.answer) {
-                score += 5; // Correct answer
-            } else {
-                score -= 2; // Incorrect answer
-            }
+    
+    // Use all answered questions for calculation, including those just answered
+    const allAnswered = questions.filter(q => answers.hasOwnProperty(q.id.toString()));
+
+    allAnswered.forEach((question) => {
+        const userAnswer = answers[question.id.toString()];
+        if (userAnswer === question.answer) {
+            score += 5; // Correct answer
+        } else {
+            score -= 2; // Incorrect answer
         }
     });
 
     score -= skipped;
     
     return Math.max(0, score);
-  }, [answeredQuestions, questions]);
+  }, [questions]);
   
 
   const finishQuiz = React.useCallback(() => {
     if (timerRef.current) {
         clearInterval(timerRef.current);
+        timerRef.current = null;
     }
     
     let correctAnswersCount = 0;
@@ -76,8 +77,9 @@ export function QuizClient({ quiz, questions }: QuizClientProps) {
     const categoryTotals: Record<string, number> = {};
     const incorrectQuestionsList: { questionText: string; userAnswer: string; correctAnswer: string; category: string; }[] = [];
 
+    const finalAnsweredQuestions = questions.filter(q => selectedAnswers.hasOwnProperty(q.id.toString()));
 
-    answeredQuestions.forEach((q) => {
+    finalAnsweredQuestions.forEach((q) => {
         if (!categoryTotals[q.category]) {
             categoryTotals[q.category] = 0;
             categoryScores[q.category] = 0;
@@ -106,7 +108,7 @@ export function QuizClient({ quiz, questions }: QuizClientProps) {
     
     const finalCategoryScores: Record<string, number> = {};
     for (const category in categoryTotals) {
-        const questionsInCategoryAnswered = answeredQuestions.filter(q => q.category === category && selectedAnswers[q.id.toString()]).length;
+        const questionsInCategoryAnswered = finalAnsweredQuestions.filter(q => q.category === category).length;
         if(questionsInCategoryAnswered > 0) {
               const correctInCategory = categoryScores[category] || 0;
               finalCategoryScores[category] = (correctInCategory / questionsInCategoryAnswered) * 100;
@@ -122,17 +124,17 @@ export function QuizClient({ quiz, questions }: QuizClientProps) {
         correctAnswers: correctAnswersCount,
         incorrectAnswers: incorrectAnswersCount,
         skippedQuestions: skippedCount,
-        totalQuestions: answeredQuestions.length,
+        totalQuestions: finalAnsweredQuestions.length,
         categoryScores: finalCategoryScores,
         incorrectQuestions: incorrectQuestionsList,
-        allQuestions: answeredQuestions, // Only store answered questions
+        allQuestions: finalAnsweredQuestions,
         userAnswers: selectedAnswers,
         completionTime,
     };
     
     sessionStorage.setItem('quizResults', JSON.stringify(results));
     router.push(`/quiz/${quiz.id}/results`);
-  }, [selectedAnswers, skippedCount, answeredQuestions, quiz.id, quiz.title, router, calculateScore, startTime, questions]);
+  }, [selectedAnswers, skippedCount, quiz.id, quiz.title, router, calculateScore, startTime, questions]);
 
 
   React.useEffect(() => {
@@ -167,12 +169,23 @@ export function QuizClient({ quiz, questions }: QuizClientProps) {
   
   const getNextQuestion = () => {
       // Simple random selection for unlimited feel
-      const nextIndex = Math.floor(Math.random() * questions.length);
-      setCurrentQuestion(questions[nextIndex]);
+      const answeredIds = new Set(answeredQuestions.map(q => q.id));
+      const availableQuestions = questions.filter(q => !answeredIds.has(q.id));
+      
+      if (availableQuestions.length === 0) {
+          finishQuiz();
+          return;
+      }
+      
+      const nextIndex = Math.floor(Math.random() * availableQuestions.length);
+      setCurrentQuestion(availableQuestions[nextIndex]);
       setIsAnswered(false);
   }
 
   const handleNext = () => {
+    if (!isAnswered && !answeredQuestions.find(q => q.id === currentQuestion.id)) {
+        setAnsweredQuestions(prev => [...prev, currentQuestion]);
+    }
     getNextQuestion();
   };
 
@@ -180,6 +193,9 @@ export function QuizClient({ quiz, questions }: QuizClientProps) {
     if (isAnswered) return;
     setSkippedCount(prev => prev + 1);
     setCurrentScore(calculateScore(selectedAnswers, skippedCount + 1));
+     if (!answeredQuestions.find(q => q.id === currentQuestion.id)) {
+        setAnsweredQuestions(prev => [...prev, currentQuestion]);
+    }
     getNextQuestion();
   }
 
@@ -194,7 +210,7 @@ export function QuizClient({ quiz, questions }: QuizClientProps) {
       <Card>
         <CardHeader>
           <div className="flex justify-between items-center mb-4">
-            <CardTitle className="text-2xl">{quiz.title}</CardTitle>
+            <CardTitle className="text-2xl font-heading">{quiz.title}</CardTitle>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2 font-semibold">
                 <Star className="h-5 w-5 text-primary" />
@@ -212,9 +228,9 @@ export function QuizClient({ quiz, questions }: QuizClientProps) {
                     </TooltipContent>
                 </Tooltip>
               </div>
-              <div className="flex items-center gap-2 font-semibold text-accent text-lg">
+              <div className="flex items-center gap-2 font-semibold text-accent-foreground text-lg">
                 <Clock className="h-6 w-6" />
-                <span className="text-2xl">{String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}</span>
+                <span className="text-3xl font-bold">{String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}</span>
               </div>
             </div>
           </div>
@@ -258,14 +274,16 @@ export function QuizClient({ quiz, questions }: QuizClientProps) {
         </CardContent>
         <CardFooter className="flex justify-between">
             <div className="flex gap-2">
-                <Button onClick={handleNext}>
-                    Next <ArrowRight className="ml-2 h-4 w-4"/>
-                </Button>
-                <Button variant="outline" onClick={handleSkip} disabled={isAnswered} className="border-2">
+                 <Button onClick={handleSkip} variant="outline" disabled={isAnswered} className="border-2">
                     Skip <SkipForward className="ml-2 h-4 w-4"/>
                 </Button>
             </div>
-             <Button onClick={finishQuiz} variant="destructive">Finish Quiz</Button>
+             <div className="flex gap-2">
+                <Button onClick={handleNext}>
+                    Next <ArrowRight className="ml-2 h-4 w-4"/>
+                </Button>
+                <Button onClick={finishQuiz} variant="destructive">Finish Quiz</Button>
+            </div>
         </CardFooter>
       </Card>
       </TooltipProvider>

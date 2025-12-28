@@ -7,6 +7,7 @@ import { useAuth } from '@/firebase';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
+import { getFirebaseErrorMessage } from '@/lib/utils';
 
 export function LoginForm() {
   const auth = useAuth();
@@ -34,7 +35,7 @@ export function LoginForm() {
       toast({
         variant: 'destructive',
         title: 'Login Failed',
-        description: error.message || 'An unexpected error occurred.',
+        description: getFirebaseErrorMessage(error.code),
       });
     }
   }
