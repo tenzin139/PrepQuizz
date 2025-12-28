@@ -120,7 +120,7 @@ export default function AccountPage() {
                 <div className='flex justify-between items-start'>
                     <div className="flex flex-row items-center gap-4">
                         <Avatar className="h-20 w-20">
-                            <AvatarImage src={userProfile?.profileImageURL} alt={userProfile?.name || ''} />
+                            <AvatarImage src={userProfile?.profileImageURL || undefined} alt={userProfile?.name || ''} />
                             <AvatarFallback className="text-3xl">{userProfile?.name?.charAt(0) || 'U'}</AvatarFallback>
                         </Avatar>
                         <div>
