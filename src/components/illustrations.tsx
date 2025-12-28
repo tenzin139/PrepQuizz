@@ -9,40 +9,31 @@ export function StudyingIllustration(props: SVGProps<SVGSVGElement>) {
       role="img"
       {...props}
     >
-      <title id="student-with-phone-title">Illustration of a cartoon student holding a phone with the Prep Quiz app.</title>
+      <title id="student-with-phone-title">2D vector illustration of a cartoon student holding a phone with the Prep Quiz app.</title>
       
-      {/* Background elements */}
-      <circle cx="25" cy="50" r="12" fill="hsl(var(--primary) / 0.2)" />
-      <rect x="160" y="80" width="25" height="25" rx="5" fill="hsl(var(--accent) / 0.4)" transform="rotate(-15 172.5 92.5)" />
-      <path d="M 150,20 L 160,30 L 150,40 Z" fill="hsl(var(--primary) / 0.3)" />
+      {/* Background shapes */}
+      <circle cx="30" cy="40" r="15" fill="hsl(var(--primary) / 0.1)" />
+      <rect x="150" y="80" width="30" height="30" rx="8" fill="hsl(var(--accent) / 0.2)" transform="rotate(-20 165 95)" />
+      <path d="M 170,15 L 185,30 L 170,45 L 155,30 Z" fill="hsl(var(--primary) / 0.15)" />
 
-      {/* Student */}
-      <g>
-        {/* Head */}
-        <circle cx="100" cy="50" r="20" fill="hsl(var(--accent) / 0.8)" />
-        {/* Hair */}
-        <path d="M 85,35 C 80,20 120,20 115,35 Q 100,40 85,35 Z" fill="hsl(var(--foreground) / 0.8)" />
-        {/* Eyes */}
-        <circle cx="93" cy="50" r="2" fill="hsl(var(--foreground))" />
-        <circle cx="107" cy="50" r="2" fill="hsl(var(--foreground))" />
-        {/* Smile */}
-        <path d="M 95 60 Q 100 65 105 60" stroke="hsl(var(--foreground))" strokeWidth="1.5" fill="none" />
-        
+      {/* Person */}
+      <g transform="translate(0, 10)">
+        {/* Legs */}
+        <rect x="90" y="115" width="20" height="25" fill="hsl(var(--foreground) / 0.7)" />
         {/* Body */}
-        <rect x="80" y="70" width="40" height="50" rx="10" fill="hsl(var(--primary))" />
-        {/* Arm holding phone */}
-        <rect x="65" y="75" width="30" height="15" rx="7.5" fill="hsl(var(--primary))" />
+        <rect x="75" y="65" width="50" height="50" rx="15" fill="hsl(var(--primary))" />
+        {/* Head */}
+        <circle cx="100" cy="45" r="22" fill="hsl(var(--accent) / 0.9)" />
+        <path d="M 80 25 C 80 10, 120 10, 120 25 L 115 30 L 85 30 Z" fill="hsl(var(--foreground) / 0.8)" />
       </g>
 
       {/* Phone */}
-      <g transform="translate(45 80)">
-        {/* Phone Case */}
-        <rect x="0" y="0" width="35" height="60" rx="5" fill="hsl(var(--foreground) / 0.7)" />
-        {/* Phone Screen */}
-        <rect x="2.5" y="2.5" width="30" height="55" rx="3" fill="hsl(var(--background))" />
+      <g transform="translate(50 75)">
+        <rect x="0" y="0" width="40" height="65" rx="8" fill="hsl(var(--card-foreground))" />
+        <rect x="3" y="3" width="34" height="59" rx="6" fill="hsl(var(--background))" />
         
         {/* App Logo on Screen */}
-        <g transform="translate(7, 15) scale(0.8)">
+        <g transform="translate(9, 20) scale(0.9)">
             <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" stroke="hsl(var(--primary))" fill="none" strokeWidth="1.5" />
             <path d="m9 9.5 2 2 4-4" stroke="hsl(var(--accent))" strokeWidth="2" />
             <path d="m9 14.5 2 2 4-4" stroke="hsl(var(--accent))" strokeWidth="2" />
