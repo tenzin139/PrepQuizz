@@ -1,14 +1,50 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { PageHeader } from '@/components/shared/page-header';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, CheckCircle, XCircle, SkipForward } from 'lucide-react';
 import { useUser, useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, limit, Timestamp } from 'firebase/firestore';
+import { collection, query, orderBy, limit } from 'firebase/firestore';
 import type { QuizResult } from '@/lib/types';
 import { format } from 'date-fns';
+import { Timestamp } from 'firebase/firestore';
+import { getPlaceholderImage } from '@/lib/placeholder-images';
+
+function HomeHero() {
+  const { user } = useUser();
+  const heroImage = getPlaceholderImage('home-hero');
+
+  return (
+    <Card className="flex flex-col md:flex-row items-center overflow-hidden">
+        <div className="md:w-1/2 p-8">
+            <h1 className="text-3xl font-bold mb-2">
+                Welcome back, {user?.displayName || 'Student'}!
+            </h1>
+            <p className="text-muted-foreground mb-6">
+                Ready to ace your next exam? Start a new quiz or review your past performance.
+            </p>
+            <Button asChild size="lg">
+                <Link href="/quiz">Start New Quiz</Link>
+            </Button>
+        </div>
+        {heroImage && (
+            <div className="md:w-1/2 h-64 md:h-full w-full relative">
+                <Image 
+                    src={heroImage.imageUrl} 
+                    alt={heroImage.description}
+                    fill
+                    className="object-cover"
+                    data-ai-hint={heroImage.imageHint}
+                />
+            </div>
+        )}
+    </Card>
+  )
+}
+
 
 function PastQuizzes() {
   const { user } = useUser();
@@ -58,10 +94,7 @@ function PastQuizzes() {
       <Card className="text-center py-12">
         <CardContent>
           <h3 className="text-lg font-medium">No quizzes taken yet.</h3>
-          <p className="text-muted-foreground mb-4">Start a new quiz to see your records here.</p>
-          <Button asChild>
-            <Link href="/quiz">Start a Quiz</Link>
-          </Button>
+          <p className="text-muted-foreground">Start a new quiz to see your records here.</p>
         </CardContent>
       </Card>
     );
@@ -102,19 +135,12 @@ function PastQuizzes() {
 
 
 export default function HomePage() {
-  const { user } = useUser();
-
   return (
-    <div className="animate-in fade-in-50">
-      <PageHeader
-        title={user ? `Welcome back, ${user.displayName || 'Student'}!` : 'Welcome!'}
-        description="Here's a summary of your recent activity. Keep up the great work!"
-      />
-      <div className="space-y-6">
-        <div>
+    <div className="animate-in fade-in-50 space-y-8">
+      <HomeHero />
+      <div>
           <h2 className="text-2xl font-semibold tracking-tight mb-4">Previous Quizzes</h2>
           <PastQuizzes />
-        </div>
       </div>
     </div>
   );
