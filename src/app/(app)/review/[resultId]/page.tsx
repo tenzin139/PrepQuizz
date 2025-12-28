@@ -109,7 +109,9 @@ function ReviewContent({ resultId }: { resultId: string }) {
   )
 }
 
-export default function ReviewPage({ params: { resultId } }: ReviewPageProps) {
+export default function ReviewPage({ params }: ReviewPageProps) {
+  const resultId = params.resultId;
+
   if (!resultId) {
     notFound();
   }
