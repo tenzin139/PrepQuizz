@@ -84,7 +84,7 @@ export function QuizResults({ results, isReviewMode = false }: ResultsProps) {
         if (aiResponse.feedback) {
           setAiFeedback(aiResponse.feedback);
         } else {
-          throw new Error(aiResponse.error || 'The AI response was empty.');
+            setErrorFeedback(aiResponse.error || 'The AI response was empty.');
         }
       } catch (e: any) {
         console.error("AI Feedback error:", e);
