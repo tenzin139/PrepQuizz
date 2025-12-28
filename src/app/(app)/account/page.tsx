@@ -2,10 +2,10 @@
 import { PageHeader } from '@/components/shared/page-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Medal, BookOpen, Clock } from 'lucide-react';
+import { Medal, BookOpen } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
-import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, getDocs, aggregate, sum, count as firestoreCount } from 'firebase/firestore';
+import { useUser, useFirestore, useCollection, useDoc, useMemoFirebase } from '@/firebase';
+import { collection, query, getDocs } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { QuizResult } from '@/lib/types';
@@ -14,7 +14,7 @@ import type { QuizResult } from '@/lib/types';
 function AccountStatistics() {
     const { user } = useUser();
     const firestore = useFirestore();
-    const [stats, setStats] = useState({ totalScore: 0, quizzesTaken: 0 });
+    const [stats, setStats] = useState<{ totalScore: number; quizzesTaken: number } | null>(null);
     const [loading, setLoading] = useState(true);
 
     const quizResultsQuery = useMemoFirebase(() => {
@@ -24,29 +24,21 @@ function AccountStatistics() {
     
     const { data: quizzes, isLoading: quizzesLoading } = useCollection<QuizResult>(quizResultsQuery);
 
-
     useEffect(() => {
-        async function fetchStats() {
-            if (!user || !firestore) return;
-            setLoading(true);
-            const resultsRef = collection(firestore, `users/${user.uid}/quiz_results`);
-
-            const totalScoreQuery = query(resultsRef);
-            const scoreSnapshot = await getDocs(totalScoreQuery);
-            const totalScore = scoreSnapshot.docs.reduce((acc, doc) => acc + (doc.data().score || 0), 0);
-
-            const quizzesTakenSnapshot = await getDocs(query(resultsRef));
-            const quizzesTaken = quizzesTakenSnapshot.size;
-
+        if (quizzes !== null && !quizzesLoading) {
+            const totalScore = quizzes.reduce((acc, doc) => acc + (doc.score || 0), 0);
+            const quizzesTaken = quizzes.length;
             setStats({ totalScore, quizzesTaken });
             setLoading(false);
+        } else if (!quizzesLoading) {
+            // Handle case where there are no quizzes
+            setStats({ totalScore: 0, quizzesTaken: 0 });
+            setLoading(false);
         }
-
-        fetchStats();
-    }, [user, firestore, quizzes]);
+    }, [quizzes, quizzesLoading]);
 
 
-    if (loading || quizzesLoading) {
+    if (loading) {
         return (
             <Card>
                 <CardHeader>
@@ -78,7 +70,7 @@ function AccountStatistics() {
                   <Medal className="h-5 w-5 text-accent"/>
                   <span>Total Score</span>
                 </div>
-                <span className="font-bold text-lg text-primary">{stats.totalScore.toLocaleString()}</span>
+                <span className="font-bold text-lg text-primary">{(stats?.totalScore || 0).toLocaleString()}</span>
               </div>
               <Separator />
               <div className="flex items-center justify-between">
@@ -86,38 +78,30 @@ function AccountStatistics() {
                     <BookOpen className="h-5 w-5 text-accent"/>
                     <span>Quizzes Taken</span>
                 </div>
-                <span className="font-bold text-lg text-primary">{stats.quizzesTaken}</span>
+                <span className="font-bold text-lg text-primary">{stats?.quizzesTaken || 0}</span>
               </div>
             </CardContent>
           </Card>
     )
 }
 
+type UserProfile = {
+  name: string;
+  age: number;
+  state: string;
+  profileImageURL: string;
+};
+
 export default function AccountPage() {
     const { user } = useUser();
-    const [userProfile, setUserProfile] = useState<{name:string, age: number, state: string, profileImageURL: string} | null>(null);
-
-    // This is not ideal, but we need to fetch the user profile data from firestore
-    // We should probably have a useUserProfile hook
     const firestore = useFirestore();
-    useEffect(() => {
-        async function fetchUser() {
-            if(user && firestore) {
-                const userDoc = await getDocs(query(collection(firestore, 'users'), where('id', '==', user.uid)));
-                if(!userDoc.empty) {
-                    const profile = userDoc.docs[0].data()
-                    setUserProfile({
-                        name: profile.name,
-                        age: profile.age,
-                        state: profile.state,
-                        profileImageURL: profile.profileImageURL,
-                    });
-                }
-            }
-        }
-        fetchUser();
-    }, [user, firestore])
 
+    const userProfileRef = useMemoFirebase(() => {
+        if (!user) return null;
+        return doc(firestore, 'users', user.uid);
+    }, [user, firestore]);
+
+    const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
 
   return (
     <div>
@@ -134,9 +118,9 @@ export default function AccountPage() {
                 <AvatarFallback className="text-3xl">{userProfile?.name?.charAt(0) || 'U'}</AvatarFallback>
               </Avatar>
               <div>
-                <CardTitle className="text-2xl">{userProfile?.name || <Skeleton className="h-8 w-32" />}</CardTitle>
+                <CardTitle className="text-2xl">{isProfileLoading ? <Skeleton className="h-8 w-32" /> : userProfile?.name}</CardTitle>
                 <CardDescription>
-                    {userProfile ? `${userProfile.age} years old, from ${userProfile.state}` : <Skeleton className="h-4 w-24 mt-1" />}
+                    {isProfileLoading ? <Skeleton className="h-4 w-24 mt-1" /> : `${userProfile?.age} years old, from ${userProfile?.state}`}
                 </CardDescription>
               </div>
             </CardHeader>

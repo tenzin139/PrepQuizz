@@ -17,7 +17,7 @@ import { LogOut } from 'lucide-react';
 import Link from 'next/link';
 import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
-
+import { BottomNav } from '@/components/shared/bottom-nav';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, isUserLoading } = useUser();
@@ -74,7 +74,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <span>Prep Quiz</span>
           </div>
         </header>
-        <main className="flex-1 p-4 sm:p-6">{children}</main>
+        <main className="flex-1 p-4 sm:p-6 pb-20 md:pb-6">{children}</main>
+        <BottomNav />
       </SidebarInset>
     </SidebarProvider>
   );
