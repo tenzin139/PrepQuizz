@@ -119,9 +119,9 @@ export default function AccountPage() {
               </Avatar>
               <div>
                 <CardTitle className="text-2xl">{isProfileLoading ? <Skeleton className="h-8 w-32" /> : userProfile?.name}</CardTitle>
-                <CardDescription>
+                <div className="text-sm text-muted-foreground">
                     {isProfileLoading ? <Skeleton className="h-4 w-24 mt-1" /> : `${userProfile?.age} years old, from ${userProfile?.state}`}
-                </CardDescription>
+                </div>
               </div>
             </CardHeader>
           </Card>
