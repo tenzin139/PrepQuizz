@@ -1,0 +1,293 @@
+{
+  "entities": {
+    "UserProfile": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "UserProfile",
+      "type": "object",
+      "description": "Represents a user profile in the Prep Quiz application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the UserProfile entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The user's full name."
+        },
+        "age": {
+          "type": "number",
+          "description": "The user's age."
+        },
+        "state": {
+          "type": "string",
+          "description": "The user's state of residence."
+        },
+        "profileImageURL": {
+          "type": "string",
+          "description": "URL of the user's profile image stored in Firebase Cloud Storage."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "age",
+        "state"
+      ]
+    },
+    "Quiz": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Quiz",
+      "type": "object",
+      "description": "Represents a quiz in the Prep Quiz application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Quiz entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name or title of the quiz."
+        },
+        "duration": {
+          "type": "number",
+          "description": "The duration of the quiz in minutes."
+        },
+        "questionIds": {
+          "type": "array",
+          "description": "References to Questions. (Relationship: Quiz 1:N Question)",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "duration",
+        "questionIds"
+      ]
+    },
+    "Question": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Question",
+      "type": "object",
+      "description": "Represents a question in a quiz.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Question entity."
+        },
+        "quizId": {
+          "type": "string",
+          "description": "Reference to Quiz. (Relationship: Quiz 1:N Question)"
+        },
+        "text": {
+          "type": "string",
+          "description": "The text of the question."
+        },
+        "options": {
+          "type": "array",
+          "description": "An array of possible answers for the question.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "correctAnswerIndex": {
+          "type": "number",
+          "description": "The index of the correct answer in the options array."
+        },
+        "category": {
+          "type": "string",
+          "description": "The category of the question (e.g., History, Science)."
+        }
+      },
+      "required": [
+        "id",
+        "quizId",
+        "text",
+        "options",
+        "correctAnswerIndex",
+        "category"
+      ]
+    },
+    "QuizResult": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "QuizResult",
+      "type": "object",
+      "description": "Represents the result of a user taking a quiz.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the QuizResult entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to UserProfile. (Relationship: UserProfile 1:N QuizResult)"
+        },
+        "quizId": {
+          "type": "string",
+          "description": "Reference to Quiz. (Relationship: Quiz 1:N QuizResult)"
+        },
+        "score": {
+          "type": "number",
+          "description": "The user's score on the quiz."
+        },
+        "correctAnswers": {
+          "type": "number",
+          "description": "The number of questions the user answered correctly."
+        },
+        "incorrectAnswers": {
+          "type": "number",
+          "description": "The number of questions the user answered incorrectly."
+        },
+        "skippedAnswers": {
+          "type": "number",
+          "description": "The number of questions the user skipped."
+        },
+        "completionTime": {
+          "type": "number",
+          "description": "Total time taken to complete the quiz in seconds"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "quizId",
+        "score",
+        "correctAnswers",
+        "incorrectAnswers",
+        "skippedAnswers",
+        "completionTime"
+      ]
+    },
+    "LeaderboardEntry": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "LeaderboardEntry",
+      "type": "object",
+      "description": "Represents an entry in the global leaderboard.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the LeaderboardEntry entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to UserProfile. (Relationship: UserProfile 1:N LeaderboardEntry)"
+        },
+        "score": {
+          "type": "number",
+          "description": "The user's total score for the leaderboard."
+        },
+        "submissionDate": {
+          "type": "string",
+          "description": "The date and time when the score was submitted.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "score"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "UserProfile",
+          "schema": {
+            "$ref": "#/backend/entities/UserProfile"
+          },
+          "description": "Stores user profiles. Uses path-based ownership, so only the user (or an admin) can access their own profile. Includes the profileImageURL to the Firebase Storage location.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/quizzes/{quizId}",
+        "definition": {
+          "entityName": "Quiz",
+          "schema": {
+            "$ref": "#/backend/entities/Quiz"
+          },
+          "description": "Stores quiz information, including name, duration, and references to questions.",
+          "params": [
+            {
+              "name": "quizId",
+              "description": "The unique identifier of the quiz."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/quizzes/{quizId}/questions/{questionId}",
+        "definition": {
+          "entityName": "Question",
+          "schema": {
+            "$ref": "#/backend/entities/Question"
+          },
+          "description": "Stores questions related to a specific quiz.  The `quizId` field in the question document duplicates the quizId from the path for query optimization.",
+          "params": [
+            {
+              "name": "quizId",
+              "description": "The unique identifier of the quiz."
+            },
+            {
+              "name": "questionId",
+              "description": "The unique identifier of the question."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/quiz_results/{quizResultId}",
+        "definition": {
+          "entityName": "QuizResult",
+          "schema": {
+            "$ref": "#/backend/entities/QuizResult"
+          },
+          "description": "Stores quiz results for each user. Uses path-based ownership, ensuring only the user (or an admin) can access their quiz results. Includes denormalized data from the associated Quiz and Question objects to allow efficient querying and display of results without requiring multiple reads.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            },
+            {
+              "name": "quizResultId",
+              "description": "The unique identifier of the quiz result."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/leaderboard_entries/{leaderboardEntryId}",
+        "definition": {
+          "entityName": "LeaderboardEntry",
+          "schema": {
+            "$ref": "#/backend/entities/LeaderboardEntry"
+          },
+          "description": "Stores leaderboard entries.  Security rules will ensure that only authenticated users can create leaderboard entries, and only admins can modify or delete them.",
+          "params": [
+            {
+              "name": "leaderboardEntryId",
+              "description": "The unique identifier of the leaderboard entry."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore data structure is designed to support the Prep Quiz application's requirements for user profiles, quizzes, questions, results, and leaderboards, while adhering to the principles of Authorization Independence, Clarity of Intent, DBAC, and QAPs. The structure emphasizes path-based ownership for private user data and membership maps for collaborative data (if any), alongside denormalization to enhance security rule simplicity and database read performance.\n\nUserProfile: User profiles are stored under `/users/{userId}`. This path-based ownership simplifies security rules, ensuring only the user can access their profile. Profile images are stored in Firebase Storage, with the URL stored in the Firestore document.\n\nQuizzes and Questions: Quizzes are stored in the `/quizzes/{quizId}` collection. Questions related to a quiz are stored in a subcollection `/quizzes/{quizId}/questions/{questionId}`. This hierarchical structure simplifies querying for questions within a specific quiz.\n\nQuiz Results: Quiz results are stored under `/users/{userId}/quiz_results/{quizResultId}`. This structure ensures that only the user or an admin can access the quiz results. Each `QuizResult` document will contain denormalized data from the associated Quiz and Question objects to allow efficient querying and display of results without requiring multiple reads.\n\nLeaderboard: Leaderboard entries are stored in the `/leaderboard_entries/{leaderboardEntryId}` collection. Each entry contains the `userId` and `score`. Security rules will ensure that only authenticated users can create leaderboard entries, and only admins can modify or delete them.\n\nAuthorization Independence (Denormalization): To avoid `get()` calls in security rules, authorization data is denormalized. For example, if collaborative quizzes were implemented, the `members` map (with roles) would be copied into each `quiz` document.\n\nQAPs (Rules are not Filters): The structure enables secure `list` operations. Path-based ownership for user profiles and quiz results ensures that listing documents under `/users/{userId}` only returns data owned by that user. Segregation of global data (like leaderboard entries) allows for different security rules to be applied.\n"
+  }
+}
