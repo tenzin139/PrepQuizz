@@ -16,7 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth, useFirestore, useUser } from '@/firebase';
 import { updateProfile } from 'firebase/auth';
-import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
+import { doc, updateDoc } from 'firebase/firestore';
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useToast } from '@/hooks/use-toast';
 import type { UserProfile } from '@/lib/types';
@@ -47,28 +47,30 @@ export function EditProfileDialog({ open, onOpenChange, userProfile }: EditProfi
   
   // File upload state
   const [selectedFile, setSelectedFile] = React.useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = React.useState<string | null>(null);
-  const [isPhotoRemoved, setIsPhotoRemoved] = React.useState(false);
+  const [previewUrl, setPreviewUrl] = React.useState<string | null>(userProfile.profileImageURL);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const canvasRef = React.useRef<HTMLCanvasElement>(null);
 
 
   React.useEffect(() => {
-    setName(userProfile.name);
-    setPreviewUrl(userProfile.profileImageURL);
-    setSelectedFile(null);
-    setShowCamera(false);
-    setIsPhotoRemoved(false);
+    if (open) {
+      setName(userProfile.name);
+      setPreviewUrl(userProfile.profileImageURL);
+      setSelectedFile(null);
+      setShowCamera(false);
+    }
   }, [open, userProfile.name, userProfile.profileImageURL]);
 
 
   React.useEffect(() => {
-    if (showCamera) {
-      setPreviewUrl(null);
-      setSelectedFile(null);
-      setIsPhotoRemoved(false);
-      const getCameraPermission = async () => {
+    let stream: MediaStream | null = null;
+    
+    const getCameraPermission = async () => {
+      if (showCamera) {
+        setPreviewUrl(null);
+        setSelectedFile(null);
         try {
-          const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+          stream = await navigator.mediaDevices.getUserMedia({ video: true });
           setHasCameraPermission(true);
 
           if (videoRef.current) {
@@ -83,15 +85,17 @@ export function EditProfileDialog({ open, onOpenChange, userProfile }: EditProfi
             description: 'Please enable camera permissions in your browser settings.',
           });
         }
-      };
+      }
+    };
 
-      getCameraPermission();
+    getCameraPermission();
 
-      return () => {
-        if (videoRef.current && videoRef.current.srcObject) {
-          const stream = videoRef.current.srcObject as MediaStream;
-          stream.getTracks().forEach(track => track.stop());
-        }
+    return () => {
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
+      if (videoRef.current) {
+        videoRef.current.srcObject = null;
       }
     }
   }, [showCamera, toast]);
@@ -103,7 +107,27 @@ export function EditProfileDialog({ open, onOpenChange, userProfile }: EditProfi
       setShowCamera(false);
       setSelectedFile(file);
       setPreviewUrl(URL.createObjectURL(file));
-      setIsPhotoRemoved(false);
+    }
+  };
+
+  const handleCapture = () => {
+    if (videoRef.current && canvasRef.current) {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const context = canvas.getContext('2d');
+      if (context) {
+        context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const capturedFile = new File([blob], `capture-${Date.now()}.jpg`, { type: 'image/jpeg' });
+            setSelectedFile(capturedFile);
+            setPreviewUrl(URL.createObjectURL(capturedFile));
+            setShowCamera(false); // Close camera after capture
+          }
+        }, 'image/jpeg');
+      }
     }
   };
 
@@ -113,9 +137,8 @@ export function EditProfileDialog({ open, onOpenChange, userProfile }: EditProfi
 
   const handleRemovePhoto = () => {
     setSelectedFile(null);
-    setPreviewUrl(null);
+    setPreviewUrl(''); // Set to empty string to signify removal
     setShowCamera(false);
-    setIsPhotoRemoved(true);
   };
 
   const handleSave = async () => {
@@ -137,11 +160,10 @@ export function EditProfileDialog({ open, onOpenChange, userProfile }: EditProfi
     }
 
     setIsSaving(true);
+    
     try {
       const nameHasChanged = name.trim() !== userProfile.name;
-      const photoHasBeenSelected = !!selectedFile;
-      const photoHasBeenRemoved = isPhotoRemoved;
-      const photoHasChanged = photoHasBeenSelected || photoHasBeenRemoved;
+      const photoHasChanged = selectedFile || previewUrl !== userProfile.profileImageURL;
 
       if (!nameHasChanged && !photoHasChanged) {
         toast({
@@ -149,21 +171,21 @@ export function EditProfileDialog({ open, onOpenChange, userProfile }: EditProfi
           description: 'You have not made any changes to your profile.',
         });
         onOpenChange(false);
+        setIsSaving(false);
         return;
       }
       
-      let newPhotoURL: string | undefined = undefined;
+      let finalPhotoURL = userProfile.profileImageURL;
 
-      if (photoHasChanged) {
-        if (photoHasBeenRemoved) {
-          newPhotoURL = '';
-        } else if (selectedFile) {
-          const storage = getStorage();
-          const filePath = `profile-images/${user.uid}/${Date.now()}-${selectedFile.name}`;
-          const newPhotoRef = storageRef(storage, filePath);
-          const snapshot = await uploadBytes(newPhotoRef, selectedFile);
-          newPhotoURL = await getDownloadURL(snapshot.ref);
-        }
+      if (selectedFile) {
+        const storage = getStorage();
+        const filePath = `profile-images/${user.uid}/${Date.now()}-${selectedFile.name}`;
+        const newPhotoRef = storageRef(storage, filePath);
+        const snapshot = await uploadBytes(newPhotoRef, selectedFile);
+        finalPhotoURL = await getDownloadURL(snapshot.ref);
+      } else if (previewUrl === '' && userProfile.profileImageURL) {
+        // This means the photo was removed
+        finalPhotoURL = '';
       }
 
       // Prepare updates
@@ -175,25 +197,25 @@ export function EditProfileDialog({ open, onOpenChange, userProfile }: EditProfi
         firestoreUpdates.name = name.trim();
       }
 
-      if (photoHasChanged && newPhotoURL !== undefined) {
-        authUpdates.photoURL = newPhotoURL;
-        firestoreUpdates.profileImageURL = newPhotoURL;
+      if (finalPhotoURL !== userProfile.profileImageURL) {
+        authUpdates.photoURL = finalPhotoURL;
+        firestoreUpdates.profileImageURL = finalPhotoURL;
       }
       
       const updatePromises: Promise<any>[] = [];
       
-      // Update Firebase Auth if there are changes
       if (Object.keys(authUpdates).length > 0) {
         updatePromises.push(updateProfile(auth.currentUser, authUpdates));
       }
 
-      // Update Firestore if there are changes
       if (Object.keys(firestoreUpdates).length > 0) {
         const userDocRef = doc(firestore, 'users', user.uid);
         updatePromises.push(updateDoc(userDocRef, firestoreUpdates));
       }
 
-      await Promise.all(updatePromises);
+      if (updatePromises.length > 0) {
+        await Promise.all(updatePromises);
+      }
       
       toast({
         title: 'Profile Updated',
@@ -230,6 +252,7 @@ export function EditProfileDialog({ open, onOpenChange, userProfile }: EditProfi
           <div className="space-y-2">
             <Label>Profile Picture</Label>
              <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/png, image/jpeg, image/jpg" />
+             <canvas ref={canvasRef} className="hidden"></canvas>
             <div className="grid grid-cols-3 gap-2">
                 <Button variant="outline" onClick={() => setShowCamera(!showCamera)}>
                     <Camera className="mr-2 h-4 w-4" />
@@ -249,20 +272,20 @@ export function EditProfileDialog({ open, onOpenChange, userProfile }: EditProfi
           <div className='space-y-2'>
               <Label>Image Preview</Label>
               <div className="w-full aspect-video rounded-md bg-muted flex items-center justify-center">
-                 {previewUrl && !isPhotoRemoved ? (
+                 {previewUrl && !showCamera ? (
                     <Image src={previewUrl} alt="Image preview" width={500} height={281} className="w-full h-full object-cover rounded-md" />
-                 ) : isPhotoRemoved || !previewUrl ? (
+                 ) : !previewUrl && !showCamera ? (
                     <Avatar className='h-32 w-32 text-4xl'>
                        <AvatarFallback>{name?.charAt(0) || 'U'}</AvatarFallback>
                     </Avatar>
                  ) : null}
+                 {showCamera && <video ref={videoRef} className="w-full aspect-video rounded-md bg-muted" autoPlay muted playsInline/>}
               </div>
           </div>
 
 
           {showCamera && (
             <div className='space-y-2'>
-                <video ref={videoRef} className="w-full aspect-video rounded-md bg-muted" autoPlay muted />
                 {hasCameraPermission === false && (
                     <Alert variant="destructive">
                         <AlertTitle>Camera Access Required</AlertTitle>
@@ -272,7 +295,7 @@ export function EditProfileDialog({ open, onOpenChange, userProfile }: EditProfi
                     </Alert>
                 )}
                  {hasCameraPermission === true && (
-                   <Button className="w-full" disabled>Capture (Coming Soon)</Button>
+                   <Button className="w-full" onClick={handleCapture}>Capture</Button>
                 )}
             </div>
           )}
