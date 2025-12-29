@@ -6,8 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/componen
 import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { Clock, ArrowRight, SkipForward, Star, Info, CheckCircle, XCircle } from 'lucide-react';
-import type { Quiz, QuizQuestion } from '@/lib/types';
+import { Clock, ArrowRight, SkipForward, Star, Info, CheckCircle, XCircle, Ban } from 'lucide-react';
+import type { Quiz, QuizQuestion, UserProfile } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import {
   AlertDialog,
@@ -25,6 +25,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { useSound } from '@/hooks/use-sound';
+import { useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
+import { doc } from 'firebase/firestore';
 
 
 type QuizClientProps = {
@@ -36,6 +38,14 @@ type QuizClientProps = {
 export function QuizClient({ quiz, questions, subCategory }: QuizClientProps) {
   const router = useRouter();
   const { playCorrectSound, playIncorrectSound } = useSound();
+  const { user } = useUser();
+  const firestore = useFirestore();
+
+  const userProfileRef = useMemoFirebase(() => {
+      if (!user) return null;
+      return doc(firestore, 'users', user.uid);
+  }, [user, firestore]);
+  const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
   
   const filteredQuestions = React.useMemo(() => {
     if (!subCategory) return questions;
@@ -51,8 +61,29 @@ export function QuizClient({ quiz, questions, subCategory }: QuizClientProps) {
   const [showTimeoutAlert, setShowTimeoutAlert] = React.useState(false);
   const [currentScore, setCurrentScore] = React.useState(0);
   const [skippedCount, setSkippedCount] = React.useState(0);
+  const [usedFreeAttempt, setUsedFreeAttempt] = React.useState(false);
+  const [canStartQuiz, setCanStartQuiz] = React.useState<boolean | null>(null);
 
   const timerRef = React.useRef<NodeJS.Timeout | null>(null);
+  
+  React.useEffect(() => {
+    if (userProfile) {
+        const freeAttemptsUsed = userProfile.quizzesTakenToday || 0;
+        const hasFreeAttempt = freeAttemptsUsed < 5;
+        const hasEnoughCredits = (userProfile.quizCredits || 0) >= 10;
+        
+        if(hasFreeAttempt) {
+            setUsedFreeAttempt(true);
+            setCanStartQuiz(true);
+        } else if (hasEnoughCredits) {
+            setUsedFreeAttempt(false);
+            setCanStartQuiz(true);
+        } else {
+            setCanStartQuiz(false);
+        }
+    }
+  }, [userProfile]);
+
 
   const calculateScore = React.useCallback((answers: Record<string, string>, skipped: number) => {
     let score = 0;
@@ -138,31 +169,34 @@ export function QuizClient({ quiz, questions, subCategory }: QuizClientProps) {
         allQuestions: allQuestionsForResults,
         userAnswers: selectedAnswers,
         completionTime,
+        usedFreeAttempt: usedFreeAttempt,
     };
     
     sessionStorage.setItem('quizResults', JSON.stringify(results));
     router.push(`/quiz/${quiz.id}/results?subCategory=${encodeURIComponent(subCategory || '')}`);
-  }, [selectedAnswers, skippedCount, quiz.id, quiz.title, router, calculateScore, startTime, subCategory, filteredQuestions, questions]);
+  }, [selectedAnswers, skippedCount, quiz.id, quiz.title, router, calculateScore, startTime, subCategory, filteredQuestions, questions, usedFreeAttempt]);
 
 
   React.useEffect(() => {
-    timerRef.current = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          if(timerRef.current) clearInterval(timerRef.current);
-          setShowTimeoutAlert(true);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
+    if (canStartQuiz) {
+        timerRef.current = setInterval(() => {
+        setTimeLeft((prev) => {
+            if (prev <= 1) {
+            if(timerRef.current) clearInterval(timerRef.current);
+            setShowTimeoutAlert(true);
+            return 0;
+            }
+            return prev - 1;
+        });
+        }, 1000);
+    }
 
     return () => {
         if (timerRef.current) {
             clearInterval(timerRef.current);
         }
     };
-  }, []);
+  }, [canStartQuiz]);
 
    React.useEffect(() => {
     if (showTimeoutAlert) {
@@ -223,6 +257,29 @@ export function QuizClient({ quiz, questions, subCategory }: QuizClientProps) {
     }
     getNextQuestion();
   }
+  
+  if (isProfileLoading || canStartQuiz === null) {
+    return <div className='text-center'>Checking your access...</div>
+  }
+  
+  if (canStartQuiz === false) {
+     return (
+        <Card className="w-full max-w-3xl mx-auto text-center">
+            <CardHeader>
+                <CardTitle className='text-2xl font-heading'>Not Enough Credits</CardTitle>
+                <CardDescription>You don't have enough credits to start this quiz.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Ban className='w-16 h-16 text-destructive mx-auto mb-4' />
+                <p>You have used all your free daily attempts and do not have enough credits (10 required).</p>
+            </CardContent>
+            <CardFooter>
+                 <Button onClick={() => router.push('/home')} className='w-full'>Back to Home</Button>
+            </CardFooter>
+        </Card>
+     )
+  }
+
 
   const minutes = Math.floor(timeLeft / 60);
   const seconds = timeLeft % 60;

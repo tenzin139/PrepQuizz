@@ -80,7 +80,8 @@ function ResultsPageContent() {
           totalQuestions,
           completionTime,
           allQuestions,
-          userAnswers
+          userAnswers,
+          usedFreeAttempt,
         } = results;
 
         const quizResultData: Omit<QuizResult, 'id'> = {
@@ -116,11 +117,33 @@ function ResultsPageContent() {
                 score: newTotalScore,
                 name: userProfile.name,
                 state: userProfile.state,
-                profileImageURL: userProfile.profileImageURL, // Use current profile URL
+                profileImageURL: userProfile.profileImageURL,
                 submissionDate: serverTimestamp(),
             }
             transaction.set(leaderboardRef, leaderboardEntry, { merge: true });
           }).catch(e => console.error("Leaderboard transaction failed: ", e));
+          
+           // Update user profile (credits, daily attempts)
+          const userDocRef = doc(firestore, 'users', user.uid);
+          runTransaction(firestore, async (transaction) => {
+            const userDoc = await transaction.get(userDocRef);
+            if (!userDoc.exists()) return;
+            
+            let newCredits = userDoc.data().quizCredits || 0;
+            let newQuizzesTaken = userDoc.data().quizzesTakenToday || 0;
+
+            if (usedFreeAttempt) {
+                newQuizzesTaken += 1;
+            } else {
+                newCredits -= 10;
+            }
+            
+            transaction.update(userDocRef, {
+                quizCredits: newCredits,
+                quizzesTakenToday: newQuizzesTaken,
+                lastQuizDate: serverTimestamp(),
+            });
+          }).catch(e => console.error("User profile update transaction failed: ", e));
         }
       };
 

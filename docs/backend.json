@@ -25,6 +25,19 @@
         "profileImageURL": {
           "type": "string",
           "description": "URL of the user's profile image stored in Firebase Cloud Storage."
+        },
+        "quizCredits": {
+          "type": "number",
+          "description": "Number of credits a user has to take extra quizzes."
+        },
+        "quizzesTakenToday": {
+            "type": "number",
+            "description": "Number of quizzes the user has taken today."
+        },
+        "lastQuizDate": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The date of the last quiz taken by the user."
         }
       },
       "required": [

@@ -5,14 +5,13 @@ import Image from 'next/image';
 import { PageHeader } from '@/components/shared/page-header';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, CheckCircle, XCircle, SkipForward } from 'lucide-react';
-import { useUser, useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, limit } from 'firebase/firestore';
-import type { QuizResult } from '@/lib/types';
-import { format } from 'date-fns';
-import { Timestamp } from 'firebase/firestore';
+import { ArrowRight, CheckCircle, XCircle, SkipForward, Coins } from 'lucide-react';
+import { useUser, useCollection, useFirestore, useMemoFirebase, useDoc } from '@/firebase';
+import { collection, query, orderBy, limit, doc, runTransaction, Timestamp } from 'firebase/firestore';
+import type { QuizResult, UserProfile } from '@/lib/types';
+import { format, isToday } from 'date-fns';
 import { redirect } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { getPlaceholderImage } from '@/lib/placeholder-images';
 
@@ -181,24 +180,77 @@ function PastQuizzes() {
 
 export default function HomePage() {
     const { user, isUserLoading } = useUser();
+    const firestore = useFirestore();
+
+    const userProfileRef = useMemoFirebase(() => {
+        if (!user) return null;
+        return doc(firestore, 'users', user.uid);
+    }, [user, firestore]);
+    const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
 
     useEffect(() => {
         if (!isUserLoading && !user) {
         redirect('/login');
         }
     }, [user, isUserLoading]);
+    
+    useEffect(() => {
+        if (userProfile && firestore) {
+            const lastQuizDate = userProfile.lastQuizDate?.toDate();
+            if (lastQuizDate && !isToday(lastQuizDate)) {
+                const userDocRef = doc(firestore, 'users', userProfile.id);
+                runTransaction(firestore, async (transaction) => {
+                    transaction.update(userDocRef, { quizzesTakenToday: 0 });
+                }).catch(e => console.error("Failed to reset daily quizzes", e));
+            }
+        }
+    }, [userProfile, firestore]);
 
-    if (isUserLoading) {
+    if (isUserLoading || isProfileLoading) {
         return (
         <div className="flex h-screen items-center justify-center">
             <p>Loading...</p>
         </div>
         );
     }
+    
+    const freeAttemptsRemaining = Math.max(0, 5 - (userProfile?.quizzesTakenToday || 0));
   
   return (
     <div className="animate-in fade-in-50 space-y-8">
       <HomeHero />
+       <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+            <Card>
+                <CardHeader className='pb-2'>
+                    <CardDescription>Daily Free Attempts</CardDescription>
+                    <CardTitle className='text-4xl'>{freeAttemptsRemaining} / 5</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <p className='text-xs text-muted-foreground'>Your free attempts reset daily.</p>
+                </CardContent>
+            </Card>
+             <Card>
+                <CardHeader className='pb-2'>
+                    <CardDescription>Your Credits</CardDescription>
+                    <CardTitle className='text-4xl flex items-center gap-2'>
+                        <Coins className='w-8 h-8 text-accent'/>
+                        {userProfile?.quizCredits || 0}
+                    </CardTitle>
+                </CardHeader>
+                <CardContent>
+                     <p className='text-xs text-muted-foreground'>Use 10 credits for an extra quiz.</p>
+                </CardContent>
+            </Card>
+            <Card>
+                <CardHeader className='pb-2'>
+                    <CardDescription>Need more credits?</CardDescription>
+                    <CardTitle className='text-4xl'>Top Up</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <Button disabled>Buy Credits (Coming Soon)</Button>
+                </CardContent>
+            </Card>
+       </div>
       <ScoringRules />
       <div>
           <h2 className="text-2xl font-semibold tracking-tight mb-4 font-heading">Previous Quizzes</h2>

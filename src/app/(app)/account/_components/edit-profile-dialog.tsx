@@ -154,7 +154,8 @@ export function EditProfileDialog({ open, onOpenChange, userProfile }: EditProfi
       const updates: Promise<any>[] = [];
       const nameChanged = name !== userProfile.name;
       const photoChanged = newPhotoURL !== userProfile.profileImageURL;
-
+      
+      // Only perform updates if something has changed
       if (nameChanged || photoChanged) {
         // Update Firebase Auth profile
         updates.push(updateProfile(auth.currentUser, { 
@@ -168,20 +169,15 @@ export function EditProfileDialog({ open, onOpenChange, userProfile }: EditProfi
           name: name, 
           profileImageURL: newPhotoURL 
         }));
-        
-        // Update denormalized leaderboard entry if it exists
-        const leaderboardRef = doc(firestore, 'leaderboard_entries', user.uid);
-        const leaderboardDoc = await getDoc(leaderboardRef);
-        if (leaderboardDoc.exists()) {
-          updates.push(updateDoc(leaderboardRef, { 
-            name: name, 
-            profileImageURL: newPhotoURL 
-          }));
-        }
       }
 
       if (updates.length > 0) {
         await Promise.all(updates);
+      } else {
+        // If there are no updates, we can just close the dialog
+        onOpenChange(false);
+        setIsSaving(false);
+        return;
       }
 
       toast({

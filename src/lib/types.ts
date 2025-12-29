@@ -56,4 +56,7 @@ export type UserProfile = {
   age: number;
   state: string;
   profileImageURL: string;
+  quizCredits?: number;
+  quizzesTakenToday?: number;
+  lastQuizDate?: Timestamp;
 };

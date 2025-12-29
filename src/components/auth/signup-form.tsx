@@ -11,7 +11,7 @@ import { cn, getFirebaseErrorMessage } from '@/lib/utils';
 import { getAvatarPlaceholders } from '@/lib/placeholder-images';
 import { useAuth, useFirestore } from '@/firebase';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 
@@ -58,6 +58,9 @@ export function SignupForm() {
           age: parseInt(age, 10),
           state,
           profileImageURL: avatarUrl,
+          quizCredits: 50,
+          quizzesTakenToday: 0,
+          lastQuizDate: serverTimestamp(),
         };
 
         const userDocRef = doc(firestore, `users/${user.uid}`);
