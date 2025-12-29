@@ -136,55 +136,54 @@ export function EditProfileDialog({ open, onOpenChange, userProfile }: EditProfi
       return;
     }
 
-
     setIsSaving(true);
     try {
       let newPhotoURL = userProfile.profileImageURL;
+      let photoHasChanged = false;
 
       if (isPhotoRemoved) {
         newPhotoURL = '';
+        photoHasChanged = true;
       } else if (selectedFile) {
         const storage = getStorage();
         const filePath = `profile-images/${user.uid}/${Date.now()}-${selectedFile.name}`;
         const newPhotoRef = storageRef(storage, filePath);
         const snapshot = await uploadBytes(newPhotoRef, selectedFile);
         newPhotoURL = await getDownloadURL(snapshot.ref);
+        photoHasChanged = true;
       }
       
+      const nameHasChanged = name !== userProfile.name;
       const updates: Promise<any>[] = [];
-      const nameChanged = name !== userProfile.name;
-      const photoChanged = newPhotoURL !== userProfile.profileImageURL;
       
-      // Only perform updates if something has changed
-      if (nameChanged || photoChanged) {
-        // Update Firebase Auth profile
+      // 1. Update Firebase Auth profile
+      if (nameHasChanged || photoHasChanged) {
         updates.push(updateProfile(auth.currentUser, { 
           displayName: name, 
           photoURL: newPhotoURL 
         }));
+      }
 
-        // Update Firestore user profile document
-        const userDocRef = doc(firestore, 'users', user.uid);
-        updates.push(updateDoc(userDocRef, { 
-          name: name, 
-          profileImageURL: newPhotoURL 
-        }));
+      // 2. Update Firestore user profile document
+      const userDocRef = doc(firestore, 'users', user.uid);
+      const userDocUpdates: Partial<UserProfile> = {};
+      if (nameHasChanged) userDocUpdates.name = name;
+      if (photoHasChanged) userDocUpdates.profileImageURL = newPhotoURL;
+      
+      if (Object.keys(userDocUpdates).length > 0) {
+        updates.push(updateDoc(userDocRef, userDocUpdates));
       }
 
       if (updates.length > 0) {
         await Promise.all(updates);
-      } else {
-        // If there are no updates, we can just close the dialog
-        onOpenChange(false);
-        setIsSaving(false);
-        return;
       }
-
+      
       toast({
         title: 'Profile Updated',
         description: 'Your profile has been successfully updated.',
       });
       onOpenChange(false);
+
     } catch (error: any) {
       console.error('Failed to update profile:', error);
       toast({
