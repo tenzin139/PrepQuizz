@@ -1,16 +1,29 @@
 'use client';
 import { PageHeader } from '@/components/shared/page-header';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Medal, BookOpen, Edit } from 'lucide-react';
+import { Medal, BookOpen, Edit, LogOut } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
-import { useUser, useFirestore, useCollection, useDoc, useMemoFirebase } from '@/firebase';
+import { useUser, useFirestore, useCollection, useDoc, useMemoFirebase, useAuth } from '@/firebase';
 import { collection, query, getDocs, doc } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { QuizResult } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { EditProfileDialog } from './_components/edit-profile-dialog';
+import { useRouter } from 'next/navigation';
+import { signOut } from 'firebase/auth';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 
 function AccountStatistics() {
@@ -96,9 +109,15 @@ type UserProfile = {
 
 export default function AccountPage() {
     const { user } = useUser();
+    const auth = useAuth();
+    const router = useRouter();
     const firestore = useFirestore();
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
+    const handleLogout = async () => {
+        await signOut(auth);
+        router.push('/login');
+    };
 
     const userProfileRef = useMemoFirebase(() => {
         if (!user) return null;
@@ -138,6 +157,33 @@ export default function AccountPage() {
             </CardHeader>
           </Card>
           <AccountStatistics />
+          <Card>
+            <CardHeader>
+                <CardTitle>Account Actions</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <Button variant="destructive" className="w-full">
+                            <LogOut className="mr-2 h-4 w-4" />
+                            Logout
+                        </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                        <AlertDialogTitle>Are you sure you want to log out?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            You will be returned to the login screen.
+                        </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleLogout}>Logout</AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+            </CardContent>
+          </Card>
         </div>
         <div className="lg:col-span-2">
             <Card>
