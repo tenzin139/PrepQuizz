@@ -34,7 +34,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <span className="text-xl font-bold">Prep Quiz</span>
           </div>
         </SidebarHeader>
-        <SidebarContent>
+        <SidebarContent className='flex flex-col'>
           <SidebarNav />
         </SidebarContent>
         <SidebarFooter>
@@ -43,9 +43,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               <AvatarImage src={user?.photoURL || undefined} alt={user?.displayName || ''} />
               <AvatarFallback>{user?.displayName?.charAt(0) || 'U'}</AvatarFallback>
             </Avatar>
-            <div className="flex flex-col">
-              <span className="font-semibold">{user?.displayName || 'User'}</span>
-              <span className="text-sm text-muted-foreground">{user?.email}</span>
+            <div className="flex flex-col overflow-hidden">
+              <span className="font-semibold truncate">{user?.displayName || 'User'}</span>
+              <span className="text-sm text-muted-foreground truncate">{user?.email}</span>
             </div>
           </div>
         </SidebarFooter>

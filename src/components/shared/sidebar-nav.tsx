@@ -34,13 +34,14 @@ export function SidebarNav() {
     <SidebarMenu>
       {navItems.map((item) => {
         const Icon = item.icon;
-        const isActive = pathname === item.href;
+        const isActive = pathname.startsWith(item.href) && item.href !== '/';
+        const isHome = item.href === '/home' && pathname === '/home';
         return (
           <SidebarMenuItem key={item.href}>
             <Link href={item.href} passHref>
               <SidebarMenuButton
                 asChild
-                isActive={isActive}
+                isActive={isHome || (isActive && item.href !== '/home')}
                 tooltip={{ children: item.label, side: 'right' }}
               >
                 <div>
@@ -52,7 +53,7 @@ export function SidebarNav() {
           </SidebarMenuItem>
         );
       })}
-       <SidebarMenuItem>
+       <SidebarMenuItem className="mt-auto">
           <SidebarMenuButton
             onClick={handleLogout}
             tooltip={{ children: 'Logout', side: 'right' }}

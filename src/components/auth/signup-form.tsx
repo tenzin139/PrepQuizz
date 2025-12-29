@@ -15,6 +15,7 @@ import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AlertTriangle } from 'lucide-react';
 
 export function SignupForm() {
   const avatars = getAvatarPlaceholders();
@@ -106,8 +107,9 @@ export function SignupForm() {
         <div className="space-y-2">
           <Label>Choose your Avatar</Label>
           <Input type="hidden" name="avatarUrl" value={selectedAvatar} />
-          {selectedAvatar === '' && (
-            <Alert variant="destructive" className="text-xs p-2">
+          {!selectedAvatar && (
+            <Alert variant="destructive" className="p-2 text-xs">
+                <AlertTriangle className="h-4 w-4" />
                 <AlertDescription>
                   Please select an avatar to continue.
                 </AlertDescription>
