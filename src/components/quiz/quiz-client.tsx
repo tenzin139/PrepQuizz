@@ -48,7 +48,7 @@ export function QuizClient({ quiz, questions }: QuizClientProps) {
     let score = 0;
     
     // Use all answered questions for calculation, including those just answered
-    const allAnswered = questions.filter(q => answers.hasOwnProperty(q.id.toString()));
+    const allAnswered = answeredQuestions.filter(q => answers.hasOwnProperty(q.id.toString()));
 
     allAnswered.forEach((question) => {
         const userAnswer = answers[question.id.toString()];
@@ -62,7 +62,7 @@ export function QuizClient({ quiz, questions }: QuizClientProps) {
     score -= skipped;
     
     return Math.max(0, score);
-  }, [questions]);
+  }, [answeredQuestions]);
   
 
   const finishQuiz = React.useCallback(() => {
@@ -77,7 +77,7 @@ export function QuizClient({ quiz, questions }: QuizClientProps) {
     const categoryTotals: Record<string, number> = {};
     const incorrectQuestionsList: { questionText: string; userAnswer: string; correctAnswer: string; category: string; }[] = [];
 
-    const finalAnsweredQuestions = questions.filter(q => selectedAnswers.hasOwnProperty(q.id.toString()));
+    const finalAnsweredQuestions = answeredQuestions.filter(q => selectedAnswers.hasOwnProperty(q.id.toString()));
 
     finalAnsweredQuestions.forEach((q) => {
         if (!categoryTotals[q.category]) {
@@ -127,14 +127,14 @@ export function QuizClient({ quiz, questions }: QuizClientProps) {
         totalQuestions: finalAnsweredQuestions.length,
         categoryScores: finalCategoryScores,
         incorrectQuestions: incorrectQuestionsList,
-        allQuestions: finalAnsweredQuestions,
+        allQuestions: answeredQuestions,
         userAnswers: selectedAnswers,
         completionTime,
     };
     
     sessionStorage.setItem('quizResults', JSON.stringify(results));
     router.push(`/quiz/${quiz.id}/results`);
-  }, [selectedAnswers, skippedCount, quiz.id, quiz.title, router, calculateScore, startTime, questions]);
+  }, [selectedAnswers, skippedCount, quiz.id, quiz.title, router, calculateScore, startTime, answeredQuestions]);
 
 
   React.useEffect(() => {
@@ -170,11 +170,11 @@ export function QuizClient({ quiz, questions }: QuizClientProps) {
   const getNextQuestion = () => {
       // Simple random selection for unlimited feel
       const answeredIds = new Set(answeredQuestions.map(q => q.id));
-      const availableQuestions = questions.filter(q => !answeredIds.has(q.id));
+      let availableQuestions = questions.filter(q => !answeredIds.has(q.id));
       
+      // If we've exhausted all unique questions, allow them to be reused.
       if (availableQuestions.length === 0) {
-          finishQuiz();
-          return;
+          availableQuestions = questions;
       }
       
       const nextIndex = Math.floor(Math.random() * availableQuestions.length);
