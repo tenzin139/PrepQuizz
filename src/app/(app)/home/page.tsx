@@ -97,7 +97,7 @@ function PastQuizzes() {
     return query(
       collection(firestore, `users/${user.uid}/quiz_results`),
       orderBy('completionDate', 'desc'),
-      limit(10)
+      limit(5)
     );
   }, [user, firestore]);
 
