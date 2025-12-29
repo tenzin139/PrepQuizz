@@ -58,6 +58,7 @@ export function EditProfileDialog({ open, onOpenChange, userProfile }: EditProfi
       setPreviewUrl(userProfile.profileImageURL);
       setSelectedFile(null);
       setShowCamera(false);
+      setHasCameraPermission(undefined);
     }
   }, [open, userProfile.name, userProfile.profileImageURL]);
 
@@ -85,6 +86,14 @@ export function EditProfileDialog({ open, onOpenChange, userProfile }: EditProfi
             description: 'Please enable camera permissions in your browser settings.',
           });
         }
+      } else {
+         if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+          }
+          if (videoRef.current) {
+            videoRef.current.srcObject = null;
+          }
+           setPreviewUrl(userProfile.profileImageURL);
       }
     };
 
@@ -98,7 +107,7 @@ export function EditProfileDialog({ open, onOpenChange, userProfile }: EditProfi
         videoRef.current.srcObject = null;
       }
     }
-  }, [showCamera, toast]);
+  }, [showCamera, toast, userProfile.profileImageURL]);
 
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -162,7 +171,8 @@ export function EditProfileDialog({ open, onOpenChange, userProfile }: EditProfi
     setIsSaving(true);
     
     try {
-      const nameHasChanged = name.trim() !== userProfile.name;
+      const trimmedName = name.trim();
+      const nameHasChanged = trimmedName !== userProfile.name;
       const photoHasChanged = selectedFile || previewUrl !== userProfile.profileImageURL;
 
       if (!nameHasChanged && !photoHasChanged) {
@@ -193,11 +203,11 @@ export function EditProfileDialog({ open, onOpenChange, userProfile }: EditProfi
       const firestoreUpdates: Partial<UserProfile> = {};
 
       if (nameHasChanged) {
-        authUpdates.displayName = name.trim();
-        firestoreUpdates.name = name.trim();
+        authUpdates.displayName = trimmedName;
+        firestoreUpdates.name = trimmedName;
       }
 
-      if (finalPhotoURL !== userProfile.profileImageURL) {
+      if (photoHasChanged) {
         authUpdates.photoURL = finalPhotoURL;
         firestoreUpdates.profileImageURL = finalPhotoURL;
       }

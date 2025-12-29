@@ -236,8 +236,14 @@ export function QuizClient({ quiz, questions, subCategory }: QuizClientProps) {
           }
       }
       
-      const nextIndex = Math.floor(Math.random() * availableQuestions.length);
-      setCurrentQuestion(availableQuestions[nextIndex]);
+      // If there are still no available questions (e.g., only one question in total), just use the current one
+      if (availableQuestions.length === 0) {
+        setCurrentQuestion(filteredQuestions[0]);
+      } else {
+        const nextIndex = Math.floor(Math.random() * availableQuestions.length);
+        setCurrentQuestion(availableQuestions[nextIndex]);
+      }
+      
       setIsAnswered(false);
   }
 
