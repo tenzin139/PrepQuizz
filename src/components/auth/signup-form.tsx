@@ -11,21 +11,50 @@ import { cn, getFirebaseErrorMessage } from '@/lib/utils';
 import { getAvatarPlaceholders } from '@/lib/placeholder-images';
 import { useAuth, useFirestore } from '@/firebase';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp, collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Loader2 } from 'lucide-react';
+import { useDebounce } from '@/hooks/use-debounce';
 
 export function SignupForm() {
   const avatars = getAvatarPlaceholders();
   const [selectedAvatar, setSelectedAvatar] = React.useState('');
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [name, setName] = React.useState('');
+  const debouncedName = useDebounce(name, 500);
+  const [isNameAvailable, setIsNameAvailable] = React.useState(true);
+  const [isCheckingName, setIsCheckingName] = React.useState(false);
+
 
   const auth = useAuth();
   const firestore = useFirestore();
   const router = useRouter();
   const { toast } = useToast();
+
+  React.useEffect(() => {
+    const checkNameAvailability = async () => {
+      if (!debouncedName) {
+        setIsNameAvailable(true); // Don't show error for empty name
+        return;
+      }
+      setIsCheckingName(true);
+      try {
+        const usersRef = collection(firestore, 'users');
+        const q = query(where('name', '==', debouncedName), limit(1));
+        const querySnapshot = await getDocs(q);
+        setIsNameAvailable(querySnapshot.empty);
+      } catch (error) {
+        console.error("Error checking name availability:", error);
+        // Default to true to not block signup due to a check failure
+        setIsNameAvailable(true); 
+      } finally {
+        setIsCheckingName(false);
+      }
+    };
+    checkNameAvailability();
+  }, [debouncedName, firestore]);
 
 
   async function handleSignup(formData: FormData) {
@@ -45,6 +74,16 @@ export function SignupForm() {
       });
       setIsSubmitting(false);
       return;
+    }
+    
+    if (!isNameAvailable) {
+        toast({
+            variant: 'destructive',
+            title: 'Name Unavailable',
+            description: 'This name is already taken. Please choose another one.',
+        });
+        setIsSubmitting(false);
+        return;
     }
 
     try {
@@ -86,13 +125,24 @@ export function SignupForm() {
     }
   }
 
+  const isSignupDisabled = isSubmitting || !isNameAvailable || isCheckingName || selectedAvatar === '';
+  const buttonText = isSubmitting ? 'Creating Account...' : isCheckingName ? 'Checking name...' : 'Create Account';
+
 
   return (
     <form action={handleSignup}>
       <CardContent className="space-y-4 pt-6">
         <div className="space-y-2">
           <Label htmlFor="name">Full Name</Label>
-          <Input id="name" name="name" placeholder="Alex Doe" required />
+          <Input id="name" name="name" placeholder="Alex Doe" required value={name} onChange={(e) => setName(e.target.value)} />
+           {!isCheckingName && !isNameAvailable && name && (
+             <p className="text-xs text-destructive">This name is already taken.</p>
+           )}
+           {isCheckingName && name && (
+              <p className="text-xs text-muted-foreground flex items-center gap-2">
+                <Loader2 className="h-3 w-3 animate-spin" /> Checking availability...
+              </p>
+           )}
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
@@ -153,8 +203,9 @@ export function SignupForm() {
         </div>
       </CardContent>
       <CardFooter>
-        <Button className="w-full" type="submit" disabled={isSubmitting || selectedAvatar === ''}>
-            {isSubmitting ? 'Creating Account...' : 'Create Account'}
+        <Button className="w-full" type="submit" disabled={isSignupDisabled}>
+            {isSubmitting || isCheckingName ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+            {buttonText}
         </Button>
       </CardFooter>
     </form>
