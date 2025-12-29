@@ -40,6 +40,16 @@ export const Quizzes: Quiz[] = [
     duration: 120,
     image: getPlaceholderImage('quiz-neet')?.imageUrl || '',
     imageHint: 'DNA biology',
+  },
+  {
+    id: 'ugc-net-paper-1',
+    title: 'UGC NET Paper 1',
+    description: 'A 2-minute challenge to test your knowledge for the UGC NET Paper 1 exam.',
+    category: 'Teaching & Research Aptitude',
+    questionsCount: 0, // No longer used
+    duration: 120,
+    image: getPlaceholderImage('quiz-ugc-net')?.imageUrl || '',
+    imageHint: 'lecture hall',
   }
 ];
 
@@ -96,6 +106,18 @@ export const AllQuizQuestions: Record<string, QuizQuestion[]> = {
     { id: 40, category: 'Ecology', text: 'The Montreal Protocol is associated with the control of:', options: ['Global warming', 'Ozone layer depletion', 'Water pollution', 'Deforestation'], answer: 'Ozone layer depletion' },
     { id: 41, category: 'Plant Physiology', text: 'Which plant hormone is responsible for ripening of fruits?', options: ['Auxin', 'Gibberellin', 'Cytokinin', 'Ethylene'], answer: 'Ethylene' },
     { id: 42, category: 'Human Health and Disease', text: 'Ringworm in humans is caused by:', options: ['Bacteria', 'Virus', 'Fungi', 'Protozoa'], answer: 'Fungi' },
+  ],
+  'ugc-net-paper-1': [
+    { id: 43, category: 'Teaching Aptitude', text: 'Which of the following is considered a key behavior contributing to effective teaching?', options: ['Summarizing what was told by a student', 'Encouraging students to elaborate on an answer', 'Using student ideas and contributions', 'Instructional variety'], answer: 'Instructional variety' },
+    { id: 44, category: 'Teaching Aptitude', text: 'The primary goal of formative evaluation is to:', options: ['Grade students at the end of the course', 'Monitor student learning to provide ongoing feedback', 'Certify student achievement', 'Select students for a specific program'], answer: 'Monitor student learning to provide ongoing feedback' },
+    { id: 45, category: 'Research Aptitude', text: 'A tentative statement with a relationship between two or more variables is known as:', options: ['A theory', 'An axiom', 'A hypothesis', 'A postulate'], answer: 'A hypothesis' },
+    { id: 46, category: 'Research Aptitude', text: 'Which of the following research types focuses on ameliorating the prevailing situations?', options: ['Fundamental Research', 'Action Research', 'Experimental Research', 'Applied Research'], answer: 'Action Research' },
+    { id: 47, category: 'Communication', text: 'In communication, a "message" is a signal that serves as a:', options: ['Stimuli for a sender', 'Stimuli for a receiver', 'Stimuli for a mass audience', 'Noise reduction'], answer: 'Stimuli for a receiver' },
+    { id: 48, category: 'Communication', text: 'Classroom communication is normally considered as:', options: ['Effective', 'Affective', 'Cognitive', 'Non-selective'], answer: 'Cognitive' },
+    { id: 49, category: 'ICT', text: 'Which of the following is a type of volatile memory?', options: ['ROM', 'Hard Disk', 'SSD', 'RAM'], answer: 'RAM' },
+    { id: 50, category: 'ICT', text: 'The term "GIGO" is related to which characteristic of computers?', options: ['Speed', 'Accuracy', 'Diligence', 'Versatility'], answer: 'Accuracy' },
+    { id: 51, category: 'People & Environment', text: 'The "Kyoto Protocol" is related to:', options: ['Ozone layer depletion', 'Hazardous waste', 'Climate change', 'Nuclear energy'], answer: 'Climate change' },
+    { id: 52, category: 'Higher Education System', text: 'Which of the following is the regulator of higher education in India?', options: ['NCERT', 'UGC', 'AICTE', 'NCTE'], answer: 'UGC' },
   ],
 };
 
