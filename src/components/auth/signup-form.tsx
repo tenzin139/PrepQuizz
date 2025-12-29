@@ -14,10 +14,12 @@ import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 export function SignupForm() {
   const avatars = getAvatarPlaceholders();
-  const [selectedAvatar, setSelectedAvatar] = React.useState(avatars[0]?.imageUrl || '');
+  const [selectedAvatar, setSelectedAvatar] = React.useState('');
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   const auth = useAuth();
   const firestore = useFirestore();
@@ -26,6 +28,7 @@ export function SignupForm() {
 
 
   async function handleSignup(formData: FormData) {
+    setIsSubmitting(true);
     const name = formData.get('name') as string;
     const age = formData.get('age') as string;
     const state = formData.get('state') as string;
@@ -37,8 +40,9 @@ export function SignupForm() {
       toast({
         variant: 'destructive',
         title: 'Missing Fields',
-        description: 'Please fill out all fields.',
+        description: 'Please fill out all fields and select an avatar.',
       });
+      setIsSubmitting(false);
       return;
     }
 
@@ -76,6 +80,8 @@ export function SignupForm() {
         title: 'Signup Failed',
         description: getFirebaseErrorMessage(error.code),
       });
+    } finally {
+        setIsSubmitting(false);
     }
   }
 
@@ -100,6 +106,13 @@ export function SignupForm() {
         <div className="space-y-2">
           <Label>Choose your Avatar</Label>
           <Input type="hidden" name="avatarUrl" value={selectedAvatar} />
+          {selectedAvatar === '' && (
+            <Alert variant="destructive" className="text-xs p-2">
+                <AlertDescription>
+                  Please select an avatar to continue.
+                </AlertDescription>
+            </Alert>
+          )}
           <ScrollArea>
             <div className="flex space-x-4 pb-4">
               {avatars.map((avatar) => (
@@ -138,7 +151,9 @@ export function SignupForm() {
         </div>
       </CardContent>
       <CardFooter>
-        <Button className="w-full" type="submit">Create Account</Button>
+        <Button className="w-full" type="submit" disabled={isSubmitting || selectedAvatar === ''}>
+            {isSubmitting ? 'Creating Account...' : 'Create Account'}
+        </Button>
       </CardFooter>
     </form>
   );

@@ -10,24 +10,12 @@ import {
   SidebarFooter,
 } from '@/components/ui/sidebar';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useUser, useAuth } from '@/firebase';
+import { useUser } from '@/firebase';
 import { AppLogo } from '@/components/icons';
-import { Button } from '@/components/ui/button';
-import { LogOut } from 'lucide-react';
-import Link from 'next/link';
-import { signOut } from 'firebase/auth';
-import { useRouter } from 'next/navigation';
 import { BottomNav } from '@/components/shared/bottom-nav';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, isUserLoading } = useUser();
-  const auth = useAuth();
-  const router = useRouter();
-
-  const handleLogout = async () => {
-    await signOut(auth);
-    router.push('/login');
-  };
 
   if (isUserLoading) {
     return (
@@ -59,10 +47,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               <span className="font-semibold">{user?.displayName || 'User'}</span>
               <span className="text-sm text-muted-foreground">{user?.email}</span>
             </div>
-            <Button variant="ghost" size="icon" className="ml-auto" onClick={handleLogout}>
-                <LogOut />
-                <span className="sr-only">Log out</span>
-            </Button>
           </div>
         </SidebarFooter>
       </Sidebar>

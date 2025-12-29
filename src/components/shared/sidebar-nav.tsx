@@ -2,7 +2,10 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Trophy, User, ClipboardEdit } from 'lucide-react';
+import { Home, Trophy, User, ClipboardEdit, LogOut } from 'lucide-react';
+import { useAuth } from '@/firebase';
+import { signOut } from 'firebase/auth';
+import { useRouter } from 'next/navigation';
 
 import {
   SidebarMenu,
@@ -19,6 +22,13 @@ const navItems = [
 
 export function SidebarNav() {
   const pathname = usePathname();
+  const auth = useAuth();
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    await signOut(auth);
+    router.push('/login');
+  };
 
   return (
     <SidebarMenu>
@@ -42,6 +52,17 @@ export function SidebarNav() {
           </SidebarMenuItem>
         );
       })}
+       <SidebarMenuItem>
+          <SidebarMenuButton
+            onClick={handleLogout}
+            tooltip={{ children: 'Logout', side: 'right' }}
+          >
+            <div>
+              <LogOut />
+              <span>Logout</span>
+            </div>
+          </SidebarMenuButton>
+      </SidebarMenuItem>
     </SidebarMenu>
   );
 }
