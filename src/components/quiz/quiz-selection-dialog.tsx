@@ -23,10 +23,8 @@ export function QuizSelectionDialog({ quiz, open, onClose }: QuizSelectionDialog
   const router = useRouter();
 
   const handleSelect = (subCategory: string) => {
-    // For now, both options lead to the same quiz.
-    // This can be expanded later to navigate to different quiz IDs.
-    // e.g., /quiz/upsc-prelims or /quiz/upsc-mains
-    router.push(`/quiz/${quiz.id}`);
+    // Pass the selected sub-category as a query parameter
+    router.push(`/quiz/${quiz.id}?subCategory=${encodeURIComponent(subCategory)}`);
     onClose();
   };
 

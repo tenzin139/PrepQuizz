@@ -24,6 +24,7 @@ import { doc } from 'firebase/firestore';
 export type DetailedQuizResults = {
     quizId: string;
     quizTitle: string;
+    subCategory?: string;
     score: number;
     correctAnswers: number;
     incorrectAnswers: number;

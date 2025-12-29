@@ -152,6 +152,7 @@ function PastQuizzes() {
           <CardHeader>
             <CardTitle className="font-heading">{quiz.quizTitle}</CardTitle>
             <CardDescription>
+              {quiz.subCategory ? `${quiz.subCategory} - ` : ''}
               Taken on {formatDate(quiz.completionDate)}
             </CardDescription>
           </CardHeader>

@@ -28,9 +28,10 @@ import {
 type QuizClientProps = {
   quiz: Quiz;
   questions: QuizQuestion[];
+  subCategory?: string;
 };
 
-export function QuizClient({ quiz, questions }: QuizClientProps) {
+export function QuizClient({ quiz, questions, subCategory }: QuizClientProps) {
   const router = useRouter();
   const [currentQuestion, setCurrentQuestion] = React.useState<QuizQuestion>(questions[0]);
   const [answeredQuestions, setAnsweredQuestions] = React.useState<QuizQuestion[]>([]);
@@ -120,6 +121,7 @@ export function QuizClient({ quiz, questions }: QuizClientProps) {
     const results = {
         quizId: quiz.id,
         quizTitle: quiz.title,
+        subCategory: subCategory,
         score: finalScore,
         correctAnswers: correctAnswersCount,
         incorrectAnswers: incorrectAnswersCount,
@@ -134,7 +136,7 @@ export function QuizClient({ quiz, questions }: QuizClientProps) {
     
     sessionStorage.setItem('quizResults', JSON.stringify(results));
     router.push(`/quiz/${quiz.id}/results`);
-  }, [selectedAnswers, skippedCount, quiz.id, quiz.title, router, calculateScore, startTime, answeredQuestions]);
+  }, [selectedAnswers, skippedCount, quiz.id, quiz.title, router, calculateScore, startTime, answeredQuestions, subCategory]);
 
 
   React.useEffect(() => {
@@ -210,7 +212,10 @@ export function QuizClient({ quiz, questions }: QuizClientProps) {
       <Card>
         <CardHeader>
           <div className="flex justify-between items-center mb-4">
-            <CardTitle className="text-2xl font-heading">{quiz.title}</CardTitle>
+            <div className='flex flex-col'>
+                <CardTitle className="text-2xl font-heading">{quiz.title}</CardTitle>
+                {subCategory && <p className='text-sm text-muted-foreground'>{subCategory}</p>}
+            </div>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2 font-semibold">
                 <Star className="h-5 w-5 text-primary" />

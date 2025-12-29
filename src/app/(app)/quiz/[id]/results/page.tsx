@@ -66,6 +66,7 @@ export default function ResultsPage() {
         const {
           quizId,
           quizTitle,
+          subCategory,
           score,
           correctAnswers,
           incorrectAnswers,
@@ -80,6 +81,7 @@ export default function ResultsPage() {
           userId: user.uid,
           quizId,
           quizTitle,
+          subCategory,
           score,
           correctAnswers,
           incorrectAnswers,

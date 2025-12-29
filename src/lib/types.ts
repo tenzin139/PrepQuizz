@@ -26,6 +26,7 @@ export type QuizResult = {
   userId: string;
   quizId: string;
   quizTitle: string;
+  subCategory?: string; // e.g., "Prelims" or "Mains"
   score: number;
   correctAnswers: number;
   incorrectAnswers: number;
