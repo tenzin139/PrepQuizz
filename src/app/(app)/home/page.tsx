@@ -1,47 +1,37 @@
 'use client';
 
 import Link from 'next/link';
-import Image from 'next/image';
 import { PageHeader } from '@/components/shared/page-header';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, CheckCircle, XCircle, SkipForward, Star } from 'lucide-react';
+import { ArrowRight, CheckCircle, XCircle, SkipForward } from 'lucide-react';
 import { useUser, useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy, limit } from 'firebase/firestore';
 import type { QuizResult } from '@/lib/types';
 import { format } from 'date-fns';
 import { Timestamp } from 'firebase/firestore';
-import { getPlaceholderImage } from '@/lib/placeholder-images';
 import { redirect } from 'next/navigation';
 import { useEffect } from 'react';
 import { cn } from '@/lib/utils';
+import { StudyingIllustration } from '@/components/illustrations';
 
 function HomeHero() {
-  const heroImage = getPlaceholderImage('home-hero-real');
-
+  const { user } = useUser();
   return (
-    <Card className="flex flex-col md:flex-row items-center overflow-hidden">
-        <div className="md:w-1/2 p-8 text-center md:text-left">
-            <h1 className="text-3xl font-bold mb-2 font-heading">
-                Prepare With Us in a fun way
+     <Card className="flex flex-col md:flex-row items-center overflow-hidden border-2 border-primary/20 shadow-lg">
+        <div className="md:w-3/5 p-8 text-center md:text-left">
+            <h1 className="text-4xl font-bold mb-3 font-heading text-primary">
+                Welcome back, {user?.displayName?.split(' ')[0] || 'Student'}!
             </h1>
-            <p className="text-muted-foreground mb-6">
-                Ready to ace your next exam? Start a new quiz or review your past performance.
+            <p className="text-muted-foreground mb-6 text-lg">
+                Ready to level up your knowledge? Let's get started!
             </p>
-            <Button asChild size="lg">
-                <Link href="/quiz">Start New Quiz</Link>
+            <Button asChild size="lg" className='rounded-full text-base font-bold shadow-lg transition-transform hover:scale-105'>
+                <Link href="/quiz">Start New Quiz <ArrowRight className="ml-2 h-5 w-5"/></Link>
             </Button>
         </div>
-        <div className="md:w-1/2 relative h-64 md:h-80 w-full">
-            {heroImage && (
-                <Image
-                    src={heroImage.imageUrl}
-                    alt={heroImage.description}
-                    fill
-                    className="object-cover"
-                    data-ai-hint={heroImage.imageHint}
-                />
-            )}
+        <div className="md:w-2/5 flex items-center justify-center p-4">
+            <StudyingIllustration className='w-full max-w-xs' />
         </div>
     </Card>
   )
@@ -74,11 +64,11 @@ function ScoringRules() {
             <h2 className="text-2xl font-semibold tracking-tight mb-4 font-heading">Scoring Rules</h2>
             <div className="grid gap-4 md:grid-cols-3">
                 {rules.map((rule, index) => (
-                     <Card key={index} className="relative overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
+                     <Card key={index} className="relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 bg-card/80 backdrop-blur-sm">
                         <CardContent className="p-6 flex flex-col items-center text-center">
                             <rule.icon className={cn("h-10 w-10 mb-3", rule.color)} />
                             <p className="font-semibold text-lg">{rule.title}</p>
-                            <p className="text-2xl font-bold text-primary">{rule.points}</p>
+                            <p className="text-3xl font-bold text-primary">{rule.points}</p>
                             <p className="text-xs text-muted-foreground">points</p>
                         </CardContent>
                     </Card>
@@ -133,7 +123,7 @@ function PastQuizzes() {
 
   if (!pastQuizzes || pastQuizzes.length === 0) {
     return (
-      <Card className="text-center py-12">
+      <Card className="text-center py-12 bg-card/80 backdrop-blur-sm">
         <CardContent>
           <h3 className="text-lg font-medium">No quizzes taken yet.</h3>
           <p className="text-muted-foreground">Start a new quiz to see your records here.</p>
@@ -145,7 +135,7 @@ function PastQuizzes() {
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
       {pastQuizzes.map((quiz) => (
-        <Card key={quiz.id} className="flex flex-col">
+        <Card key={quiz.id} className="flex flex-col transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
           <CardHeader>
             <CardTitle className="font-heading">{quiz.quizTitle}</CardTitle>
             <CardDescription>
@@ -154,16 +144,15 @@ function PastQuizzes() {
           </CardHeader>
           <CardContent className="flex-grow">
             <div className="space-y-2">
-              <p className="font-bold text-4xl text-primary">{quiz.score}<span className="text-lg font-medium text-muted-foreground">/100</span></p>
+              <p className="font-bold text-5xl text-primary">{quiz.score}<span className="text-lg font-medium text-muted-foreground">pts</span></p>
               <div className="flex items-center gap-4 text-sm text-muted-foreground">
                 <span className="flex items-center gap-1"><CheckCircle className="h-4 w-4 text-green-500" /> {quiz.correctAnswers} Correct</span>
                 <span className="flex items-center gap-1"><XCircle className="h-4 w-4 text-red-500" /> {quiz.incorrectAnswers} Incorrect</span>
-                <span className="flex items-center gap-1"><SkipForward className="h-4 w-4 text-yellow-500" /> {quiz.skippedAnswers} Skipped</span>
               </div>
             </div>
           </CardContent>
           <CardFooter>
-            <Button asChild variant="outline" className="w-full" disabled={!quiz.id}>
+            <Button asChild variant="outline" className="w-full rounded-full font-semibold" disabled={!quiz.id}>
               <Link href={`/review/${quiz.id}`}>
                 Review Quiz <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
