@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { PageHeader } from '@/components/shared/page-header';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,10 +14,12 @@ import { Timestamp } from 'firebase/firestore';
 import { redirect } from 'next/navigation';
 import { useEffect } from 'react';
 import { cn } from '@/lib/utils';
-import { StudyingIllustration } from '@/components/illustrations';
+import { getPlaceholderImage } from '@/lib/placeholder-images';
 
 function HomeHero() {
   const { user } = useUser();
+  const heroImage = getPlaceholderImage('home-hero-real');
+
   return (
      <Card className="flex flex-col md:flex-row items-center overflow-hidden border-2 border-primary/20 shadow-lg">
         <div className="md:w-3/5 p-8 text-center md:text-left">
@@ -30,8 +33,18 @@ function HomeHero() {
                 <Link href="/quiz">Start New Quiz <ArrowRight className="ml-2 h-5 w-5"/></Link>
             </Button>
         </div>
-        <div className="md:w-2/5 flex items-center justify-center p-4">
-            <StudyingIllustration className='w-full max-w-xs' />
+        <div className="md:w-2/5 flex items-center justify-center p-4 h-full">
+            {heroImage && (
+                <div className="relative w-full h-48 md:h-full rounded-lg overflow-hidden">
+                    <Image
+                        src={heroImage.imageUrl}
+                        alt={heroImage.description}
+                        fill
+                        className="object-cover"
+                        data-ai-hint={heroImage.imageHint}
+                    />
+                </div>
+            )}
         </div>
     </Card>
   )
