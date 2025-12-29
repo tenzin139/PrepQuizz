@@ -24,6 +24,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { useSound } from '@/hooks/use-sound';
+
 
 type QuizClientProps = {
   quiz: Quiz;
@@ -33,6 +35,7 @@ type QuizClientProps = {
 
 export function QuizClient({ quiz, questions, subCategory }: QuizClientProps) {
   const router = useRouter();
+  const { playCorrectSound, playIncorrectSound } = useSound();
   
   const filteredQuestions = React.useMemo(() => {
     if (!subCategory) return questions;
@@ -83,32 +86,29 @@ export function QuizClient({ quiz, questions, subCategory }: QuizClientProps) {
     const categoryTotals: Record<string, number> = {};
     const incorrectQuestionsList: { questionText: string; userAnswer: string; correctAnswer: string; category: string; }[] = [];
 
-    const finalAnsweredQuestionIds = new Set(Object.keys(selectedAnswers));
-    const allAttemptedQuestions = filteredQuestions.filter(q => answeredQuestions.some(aq => aq.id === q.id) || finalAnsweredQuestionIds.has(q.id.toString()));
+    const allQuestionsForResults = filteredQuestions.length > 0 ? filteredQuestions : questions;
 
-
-    allAttemptedQuestions.forEach((q) => {
+    allQuestionsForResults.forEach((q) => {
+      const userAnswer = selectedAnswers[q.id.toString()];
+      if (userAnswer !== undefined) {
         if (!categoryTotals[q.category]) {
-            categoryTotals[q.category] = 0;
-            categoryScores[q.category] = 0;
+          categoryTotals[q.category] = 0;
+          categoryScores[q.category] = 0;
         }
         categoryTotals[q.category]++;
-
-        const userAnswer = selectedAnswers[q.id.toString()];
-        if (userAnswer) {
-            if (userAnswer === q.answer) {
-                correctAnswersCount++;
-                categoryScores[q.category] = (categoryScores[q.category] || 0) + 1;
-            } else {
-                incorrectAnswersCount++;
-                incorrectQuestionsList.push({ 
-                    questionText: q.text,
-                    userAnswer: userAnswer,
-                    correctAnswer: q.answer,
-                    category: q.category,
-                });
-            }
+        if (userAnswer === q.answer) {
+          correctAnswersCount++;
+          categoryScores[q.category]++;
+        } else {
+          incorrectAnswersCount++;
+          incorrectQuestionsList.push({
+            questionText: q.text,
+            userAnswer,
+            correctAnswer: q.answer,
+            category: q.category,
+          });
         }
+      }
     });
     
     const finalScore = calculateScore(selectedAnswers, skippedCount);
@@ -132,17 +132,17 @@ export function QuizClient({ quiz, questions, subCategory }: QuizClientProps) {
         correctAnswers: correctAnswersCount,
         incorrectAnswers: incorrectAnswersCount,
         skippedQuestions: skippedCount,
-        totalQuestions: allAttemptedQuestions.length,
+        totalQuestions: correctAnswersCount + incorrectAnswersCount + skippedCount,
         categoryScores: finalCategoryScores,
         incorrectQuestions: incorrectQuestionsList,
-        allQuestions: allAttemptedQuestions,
+        allQuestions: allQuestionsForResults,
         userAnswers: selectedAnswers,
         completionTime,
     };
     
     sessionStorage.setItem('quizResults', JSON.stringify(results));
     router.push(`/quiz/${quiz.id}/results?subCategory=${encodeURIComponent(subCategory || '')}`);
-  }, [selectedAnswers, skippedCount, quiz.id, quiz.title, router, calculateScore, startTime, answeredQuestions, subCategory, filteredQuestions]);
+  }, [selectedAnswers, skippedCount, quiz.id, quiz.title, router, calculateScore, startTime, subCategory, filteredQuestions, questions]);
 
 
   React.useEffect(() => {
@@ -172,6 +172,14 @@ export function QuizClient({ quiz, questions, subCategory }: QuizClientProps) {
 
   const handleSelectAnswer = (questionId: number, answer: string) => {
     if (isAnswered) return;
+    
+    const isCorrect = currentQuestion.answer === answer;
+    if (isCorrect) {
+      playCorrectSound();
+    } else {
+      playIncorrectSound();
+    }
+
     const newAnswers = { ...selectedAnswers, [questionId.toString()]: answer };
     setSelectedAnswers(newAnswers);
     if (!answeredQuestions.find(q => q.id === questionId)) {
@@ -323,3 +331,5 @@ export function QuizClient({ quiz, questions, subCategory }: QuizClientProps) {
     </div>
   );
 }
+
+    
