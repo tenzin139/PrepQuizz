@@ -108,7 +108,7 @@ function PastQuizzes() {
 
   const formatDate = (timestamp: Timestamp | undefined) => {
     if (!timestamp) return 'N/A';
-    return format(new Date(timestamp.seconds * 1000), 'PPP');
+    return format(new Date(timestamp.seconds * 1000), 'PPP p');
   }
 
   if (isLoading) {
