@@ -33,7 +33,13 @@ type QuizClientProps = {
 
 export function QuizClient({ quiz, questions, subCategory }: QuizClientProps) {
   const router = useRouter();
-  const [currentQuestion, setCurrentQuestion] = React.useState<QuizQuestion>(questions[0]);
+  
+  const filteredQuestions = React.useMemo(() => {
+    if (!subCategory) return questions;
+    return questions.filter(q => q.subCategory === subCategory);
+  }, [questions, subCategory]);
+  
+  const [currentQuestion, setCurrentQuestion] = React.useState<QuizQuestion>(filteredQuestions[0]);
   const [answeredQuestions, setAnsweredQuestions] = React.useState<QuizQuestion[]>([]);
   const [selectedAnswers, setSelectedAnswers] = React.useState<Record<string, string>>({});
   const [isAnswered, setIsAnswered] = React.useState(false);
@@ -48,22 +54,21 @@ export function QuizClient({ quiz, questions, subCategory }: QuizClientProps) {
   const calculateScore = React.useCallback((answers: Record<string, string>, skipped: number) => {
     let score = 0;
     
-    // Use all answered questions for calculation, including those just answered
-    const allAnswered = answeredQuestions.filter(q => answers.hasOwnProperty(q.id.toString()));
-
-    allAnswered.forEach((question) => {
-        const userAnswer = answers[question.id.toString()];
-        if (userAnswer === question.answer) {
-            score += 5; // Correct answer
-        } else {
-            score -= 2; // Incorrect answer
+    questions.forEach((question) => {
+        if (answers.hasOwnProperty(question.id.toString())) {
+            const userAnswer = answers[question.id.toString()];
+            if (userAnswer === question.answer) {
+                score += 5; // Correct answer
+            } else {
+                score -= 2; // Incorrect answer
+            }
         }
     });
 
     score -= skipped;
     
     return Math.max(0, score);
-  }, [answeredQuestions]);
+  }, [questions]);
   
 
   const finishQuiz = React.useCallback(() => {
@@ -78,9 +83,11 @@ export function QuizClient({ quiz, questions, subCategory }: QuizClientProps) {
     const categoryTotals: Record<string, number> = {};
     const incorrectQuestionsList: { questionText: string; userAnswer: string; correctAnswer: string; category: string; }[] = [];
 
-    const finalAnsweredQuestions = answeredQuestions.filter(q => selectedAnswers.hasOwnProperty(q.id.toString()));
+    const finalAnsweredQuestionIds = new Set(Object.keys(selectedAnswers));
+    const allAttemptedQuestions = filteredQuestions.filter(q => answeredQuestions.some(aq => aq.id === q.id) || finalAnsweredQuestionIds.has(q.id.toString()));
 
-    finalAnsweredQuestions.forEach((q) => {
+
+    allAttemptedQuestions.forEach((q) => {
         if (!categoryTotals[q.category]) {
             categoryTotals[q.category] = 0;
             categoryScores[q.category] = 0;
@@ -109,10 +116,9 @@ export function QuizClient({ quiz, questions, subCategory }: QuizClientProps) {
     
     const finalCategoryScores: Record<string, number> = {};
     for (const category in categoryTotals) {
-        const questionsInCategoryAnswered = finalAnsweredQuestions.filter(q => q.category === category).length;
-        if(questionsInCategoryAnswered > 0) {
+        if(categoryTotals[category] > 0) {
               const correctInCategory = categoryScores[category] || 0;
-              finalCategoryScores[category] = (correctInCategory / questionsInCategoryAnswered) * 100;
+              finalCategoryScores[category] = (correctInCategory / categoryTotals[category]) * 100;
         } else {
             finalCategoryScores[category] = 0;
         }
@@ -126,17 +132,17 @@ export function QuizClient({ quiz, questions, subCategory }: QuizClientProps) {
         correctAnswers: correctAnswersCount,
         incorrectAnswers: incorrectAnswersCount,
         skippedQuestions: skippedCount,
-        totalQuestions: finalAnsweredQuestions.length,
+        totalQuestions: allAttemptedQuestions.length,
         categoryScores: finalCategoryScores,
         incorrectQuestions: incorrectQuestionsList,
-        allQuestions: answeredQuestions,
+        allQuestions: allAttemptedQuestions,
         userAnswers: selectedAnswers,
         completionTime,
     };
     
     sessionStorage.setItem('quizResults', JSON.stringify(results));
-    router.push(`/quiz/${quiz.id}/results`);
-  }, [selectedAnswers, skippedCount, quiz.id, quiz.title, router, calculateScore, startTime, answeredQuestions, subCategory]);
+    router.push(`/quiz/${quiz.id}/results?subCategory=${encodeURIComponent(subCategory || '')}`);
+  }, [selectedAnswers, skippedCount, quiz.id, quiz.title, router, calculateScore, startTime, answeredQuestions, subCategory, filteredQuestions]);
 
 
   React.useEffect(() => {
@@ -158,6 +164,12 @@ export function QuizClient({ quiz, questions, subCategory }: QuizClientProps) {
     };
   }, []);
 
+   React.useEffect(() => {
+    if (showTimeoutAlert) {
+      finishQuiz();
+    }
+  }, [showTimeoutAlert, finishQuiz]);
+
   const handleSelectAnswer = (questionId: number, answer: string) => {
     if (isAnswered) return;
     const newAnswers = { ...selectedAnswers, [questionId.toString()]: answer };
@@ -170,13 +182,16 @@ export function QuizClient({ quiz, questions, subCategory }: QuizClientProps) {
   };
   
   const getNextQuestion = () => {
-      // Simple random selection for unlimited feel
       const answeredIds = new Set(answeredQuestions.map(q => q.id));
-      let availableQuestions = questions.filter(q => !answeredIds.has(q.id));
+      let availableQuestions = filteredQuestions.filter(q => !answeredIds.has(q.id));
       
-      // If we've exhausted all unique questions, allow them to be reused.
       if (availableQuestions.length === 0) {
-          availableQuestions = questions;
+          // All questions have been seen, start reusing them but avoid the current one
+          availableQuestions = filteredQuestions.filter(q => q.id !== currentQuestion.id);
+          if(availableQuestions.length === 0) {
+            // This happens if there's only one question, just reuse it
+            availableQuestions = filteredQuestions;
+          }
       }
       
       const nextIndex = Math.floor(Math.random() * availableQuestions.length);
@@ -301,7 +316,7 @@ export function QuizClient({ quiz, questions, subCategory }: QuizClientProps) {
             </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-            <AlertDialogAction onClick={finishQuiz}>View Results</AlertDialogAction>
+            <AlertDialogAction onClick={() => setShowTimeoutAlert(false)}>View Results</AlertDialogAction>
             </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

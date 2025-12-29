@@ -1,7 +1,7 @@
 'use client';
 
 import { Suspense, useEffect, useState, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { QuizResults, type DetailedQuizResults } from '@/components/quiz/quiz-results';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -31,8 +31,9 @@ function ResultsFallback() {
     )
 }
 
-export default function ResultsPage() {
+function ResultsPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [results, setResults] = useState<DetailedQuizResults | null>(null);
   const [error, setError] = useState<string | null>(null);
   const { user } = useUser();
@@ -50,6 +51,11 @@ export default function ResultsPage() {
     if (resultsData) {
       try {
         const parsedData = JSON.parse(resultsData);
+        // Get subCategory from URL search params as a fallback
+        const subCategory = searchParams.get('subCategory');
+        if (subCategory && !parsedData.subCategory) {
+            parsedData.subCategory = subCategory;
+        }
         setResults(parsedData);
       } catch (e) {
         console.error('Failed to parse quiz results:', e);
@@ -58,7 +64,7 @@ export default function ResultsPage() {
     } else {
       setError('No quiz results found. Please take a quiz to see your results.');
     }
-  }, []);
+  }, [searchParams]);
 
   useEffect(() => {
     if (results && user && firestore && userProfile) {
@@ -97,7 +103,8 @@ export default function ResultsPage() {
         const newResultRef = await addDocumentNonBlocking(resultsColRef, quizResultData);
 
         if (newResultRef) {
-          const leaderboardRef = doc(firestore, 'leaderboard_entries', user.uid);
+          // Use a quiz-specific leaderboard path
+          const leaderboardRef = doc(firestore, `leaderboards/${quizId}/entries`, user.uid);
           
           runTransaction(firestore, async (transaction) => {
             const leaderboardDoc = await transaction.get(leaderboardRef);
@@ -147,4 +154,13 @@ export default function ResultsPage() {
         </Suspense>
     </div>
   );
+}
+
+
+export default function ResultsPage() {
+    return (
+        <Suspense fallback={<ResultsFallback />}>
+            <ResultsPageContent />
+        </Suspense>
+    )
 }

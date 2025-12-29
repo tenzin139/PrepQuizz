@@ -5,7 +5,7 @@
  * is readable by anyone but has strict controls on who can create or modify content.
  *
  * Data Structure: The data is organized into top-level collections for shared/public data
- * (quizzes, leaderboard_entries) and a primary user-centric collection (/users/{userId}) that
+ * (quizzes, leaderboards) and a primary user-centric collection (/users/{userId}) that
  * houses all data specific to a single user, including their profile and quiz history. This
  * structural segregation ensures that private data cannot be accidentally listed or exposed publicly.
  *
@@ -15,7 +15,7 @@
  * - Public Read-Only Content: Core app content like quizzes and their questions are globally readable
  *   to allow any user (authenticated or not) to take them. Writes to this content are disabled at the
  *   rules level, assuming content is managed by a backend process or admin SDK.
- * - Authenticated-Only Creation/Updates: For public collections where users can contribute, like the leaderboard,
+ * - Authenticated-Only Creation/Updates: For public collections where users can contribute, like leaderboards,
  *   creation and updates are limited to signed-in users who must correctly identify themselves.
  * - Immutability: Critical relational fields (like a user's ID within their own documents) are enforced
  *   as immutable after creation to prevent data re-association or ownership hijacking.
@@ -26,7 +26,7 @@
  * and makes the ownership relationship explicit and easy to verify.
  *
  * Structural Segregation: Private user data (profiles, results) is stored in a user-specific path
- * `/users/{userId}/...`, while public data (quizzes, leaderboard) is in separate top-level collections.
+ * `/users/{userId}/...`, while public data (quizzes, leaderboards) is in separate top-level collections.
  * This separation is a core security principle that makes it impossible to write a query that
  * accidentally mixes private and public data, providing a strong security guarantee for list operations.
  */
@@ -92,9 +92,7 @@ service cloud.firestore {
      */
     match /quizzes/{quizId} {
       allow get, list: if true;
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+      allow create, update, delete: if false;
 
       /**
        * @description Rules for quiz questions. Like quizzes, questions are public and readable
@@ -106,22 +104,20 @@ service cloud.firestore {
        */
       match /questions/{questionId} {
         allow get, list: if true;
-        allow create: if false;
-        allow update: if false;
-        allow delete: if false;
+        allow create, update, delete: if false;
       }
     }
 
     /**
-     * @description Rules for the global leaderboard. The leaderboard is public and can be
+     * @description Rules for quiz-specific leaderboards. The leaderboards are public and can be
      * read by anyone. Authenticated users can create or update their OWN entry,
      * but they cannot modify or delete any other entries.
-     * @path /leaderboard_entries/{userId}
-     * @allow A signed-in user with auth.uid 'user123' creating or updating their entry at `/leaderboard_entries/user123`. (write)
+     * @path /leaderboards/{quizId}/entries/{userId}
+     * @allow A signed-in user with auth.uid 'user123' creating or updating their entry. (write)
      * @deny A signed-in user trying to update or delete another user's leaderboard entry. (write)
-     * @principle Implements a "write-once" model for user-submitted public data, keyed by userId.
+     * @principle Implements a "write-once" model for user-submitted public data, keyed by userId within a specific quiz context.
      */
-    match /leaderboard_entries/{userId} {
+    match /leaderboards/{quizId}/entries/{userId} {
       allow get, list: if true;
       allow write: if isOwner(userId); // Allows create, update, delete only for the owner.
     }

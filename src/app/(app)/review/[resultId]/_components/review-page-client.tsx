@@ -6,7 +6,7 @@ import { QuizResults, type DetailedQuizResults } from '@/components/quiz/quiz-re
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PageHeader } from '@/components/shared/page-header';
-import type { QuizResult } from '@/lib/types';
+import type { QuizResult, QuizQuestion } from '@/lib/types';
 import { AllQuizQuestions } from '@/lib/mock-data';
 
 function ResultsFallback() {
@@ -47,15 +47,16 @@ function ReviewPageClient({ resultId }: { resultId: string }) {
   }
   
   const allQuestions = result.allQuestions || AllQuizQuestions[result.quizId] || [];
-
+  
   const incorrectQuestionsList = allQuestions
     .filter(q => {
         const userAnswer = result.userAnswers?.[q.id.toString()];
+        // An answer is incorrect if it was given and does not match the correct answer.
         return userAnswer !== undefined && userAnswer !== q.answer;
     })
     .map(q => ({
         questionText: q.text,
-        userAnswer: result.userAnswers?.[q.id.toString()] || '',
+        userAnswer: result.userAnswers?.[q.id.toString()] || 'Skipped', // Default to 'Skipped' if undefined
         correctAnswer: q.answer,
         category: q.category,
     }));
@@ -63,7 +64,11 @@ function ReviewPageClient({ resultId }: { resultId: string }) {
   const categoryScores: Record<string, number> = {};
   const categoryTotals: Record<string, number> = {};
   
-  allQuestions.forEach(q => {
+  allQuestions.forEach((q: QuizQuestion) => {
+      // Filter by subCategory if it exists in the result
+      if (result.subCategory && q.subCategory && q.subCategory !== result.subCategory) {
+          return;
+      }
       if (!categoryTotals[q.category]) {
           categoryTotals[q.category] = 0;
           categoryScores[q.category] = 0;
@@ -76,10 +81,9 @@ function ReviewPageClient({ resultId }: { resultId: string }) {
 
   const finalCategoryScores: Record<string, number> = {};
     for (const category in categoryTotals) {
-        const questionsInCategory = allQuestions.filter(q => q.category === category).length;
-        if(questionsInCategory > 0) {
+        if(categoryTotals[category] > 0) {
               const correctInCategory = categoryScores[category] || 0;
-              finalCategoryScores[category] = (correctInCategory / questionsInCategory) * 100;
+              finalCategoryScores[category] = (correctInCategory / categoryTotals[category]) * 100;
         } else {
             finalCategoryScores[category] = 0;
         }
@@ -92,7 +96,7 @@ function ReviewPageClient({ resultId }: { resultId: string }) {
     totalQuestions: result.totalQuestions,
     categoryScores: finalCategoryScores,
     incorrectQuestions: incorrectQuestionsList,
-    allQuestions: allQuestions,
+    allQuestions: allQuestions.filter(q => !result.subCategory || !q.subCategory || q.subCategory === result.subCategory),
     userAnswers: result.userAnswers || {},
   };
 

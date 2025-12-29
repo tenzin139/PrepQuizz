@@ -3,10 +3,11 @@ import { Timestamp } from 'firebase/firestore';
 export type QuizQuestion = {
   id: number;
   category: string;
-  question: string; // Legacy, prefer `text`
+  question?: string; // Legacy, prefer `text`
   text: string;
   options: string[];
   answer: string;
+  subCategory?: 'Prelims' | 'Mains';
 };
 
 export type Quiz = {
