@@ -108,16 +108,18 @@ export const AllQuizQuestions: Record<string, QuizQuestion[]> = {
     { id: 42, category: 'Human Health and Disease', text: 'Ringworm in humans is caused by:', options: ['Bacteria', 'Virus', 'Fungi', 'Protozoa'], answer: 'Fungi' },
   ],
   'ugc-net-paper-1': [
-    { id: 43, category: 'Teaching Aptitude', text: 'Which of the following is considered a key behavior contributing to effective teaching?', options: ['Summarizing what was told by a student', 'Encouraging students to elaborate on an answer', 'Using student ideas and contributions', 'Instructional variety'], answer: 'Instructional variety' },
-    { id: 44, category: 'Teaching Aptitude', text: 'The primary goal of formative evaluation is to:', options: ['Grade students at the end of the course', 'Monitor student learning to provide ongoing feedback', 'Certify student achievement', 'Select students for a specific program'], answer: 'Monitor student learning to provide ongoing feedback' },
-    { id: 45, category: 'Research Aptitude', text: 'A tentative statement with a relationship between two or more variables is known as:', options: ['A theory', 'An axiom', 'A hypothesis', 'A postulate'], answer: 'A hypothesis' },
-    { id: 46, category: 'Research Aptitude', text: 'Which of the following research types focuses on ameliorating the prevailing situations?', options: ['Fundamental Research', 'Action Research', 'Experimental Research', 'Applied Research'], answer: 'Action Research' },
-    { id: 47, category: 'Communication', text: 'In communication, a "message" is a signal that serves as a:', options: ['Stimuli for a sender', 'Stimuli for a receiver', 'Stimuli for a mass audience', 'Noise reduction'], answer: 'Stimuli for a receiver' },
-    { id: 48, category: 'Communication', text: 'Classroom communication is normally considered as:', options: ['Effective', 'Affective', 'Cognitive', 'Non-selective'], answer: 'Cognitive' },
-    { id: 49, category: 'ICT', text: 'Which of the following is a type of volatile memory?', options: ['ROM', 'Hard Disk', 'SSD', 'RAM'], answer: 'RAM' },
-    { id: 50, category: 'ICT', text: 'The term "GIGO" is related to which characteristic of computers?', options: ['Speed', 'Accuracy', 'Diligence', 'Versatility'], answer: 'Accuracy' },
-    { id: 51, category: 'People & Environment', text: 'The "Kyoto Protocol" is related to:', options: ['Ozone layer depletion', 'Hazardous waste', 'Climate change', 'Nuclear energy'], answer: 'Climate change' },
-    { id: 52, category: 'Higher Education System', text: 'Which of the following is the regulator of higher education in India?', options: ['NCERT', 'UGC', 'AICTE', 'NCTE'], answer: 'UGC' },
+    { id: 43, category: 'Teaching Aptitude', text: 'According to NEP 2020, the current 10+2 system is to be replaced by a new curricular structure. What is the new structure?', options: ['3+4+4+5', '5+3+3+4', '5+4+3+3', '3+5+3+4'], answer: '5+3+3+4' },
+    { id: 44, category: 'Teaching Aptitude', text: 'SWAYAM is a platform for offering MOOCs. What does SWAYAM stand for?', options: ['Study Webs of Active-Learning for Young Aspiring Minds', 'Student World of Action-Learning for Youth Advancement Mission', 'Study World of Active-Learning for Young Academic Minds', 'Statewide Webs of Action-Learning for Young Aspiring Minds'], answer: 'Study Webs of Active-Learning for Young Aspiring Minds' },
+    { id: 45, category: 'Research Aptitude', text: 'A research paper is evaluated by other experts in the same field before publication. This process is called:', options: ['Peer Review', 'Blind Review', 'Panel Review', 'Editorial Review'], answer: 'Peer Review' },
+    { id: 46, category: 'Research Aptitude', text: 'Which software is commonly used for plagiarism detection?', options: ['SPSS', 'Urkund/Turnitin', 'EndNote', 'Grammarly'], answer: 'Urkund/Turnitin' },
+    { id: 47, category: 'Communication', text: 'The "grapevine" is a form of:', options: ['Formal Communication', 'Informal Communication', 'Downward Communication', 'Upward Communication'], answer: 'Informal Communication' },
+    { id: 48, category: 'Communication', text: 'Semantic barrier of communication is implied when the:', options: ['signal is lost before reaching the receiver', 'message is transmitted by the wrong channel', 'receiver does not understand the meaning of the message', 'receiver is inattentive'], answer: 'receiver does not understand the meaning of the message' },
+    { id: 49, category: 'ICT', text: 'Which of the following is an example of a Learning Management System (LMS)?', options: ['Google Meet', 'Moodle', 'WordPress', 'Adobe Photoshop'], answer: 'Moodle' },
+    { id: 50, category: 'ICT', text: 'What does the acronym "URL" stand for in the context of the internet?', options: ['Uniform Resource Locator', 'Universal Record Link', 'Uniform Record Locator', 'Universal Resource Link'], answer: 'Uniform Resource Locator' },
+    { id: 51, category: 'People & Environment', text: 'The Sustainable Development Goals (SDGs) are a set of how many global goals?', options: ['15', '16', '17', '18'], answer: '17' },
+    { id: 52, category: 'Higher Education System', text: 'Which body is responsible for the accreditation of universities and colleges in India?', options: ['UGC', 'AICTE', 'NAAC', 'NCTE'], answer: 'NAAC' },
+    { id: 53, category: 'Logical Reasoning', text: 'Which of the following is not a valid deductive argument form?', options: ['Modus Ponens', 'Modus Tollens', 'Affirming the Consequent', 'Disjunctive Syllogism'], answer: 'Affirming the Consequent' },
+    { id: 54, category: 'Data Interpretation', text: 'If the average of 5 consecutive numbers is 15, what is the largest number?', options: ['15', '16', '17', '18'], answer: '17' }
   ],
 };
 
