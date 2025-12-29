@@ -127,7 +127,7 @@ export function EditProfileDialog({ open, onOpenChange, userProfile }: EditProfi
       });
       return;
     }
-    if (!name) {
+    if (!name.trim()) {
       toast({
         variant: 'destructive',
         title: 'Validation Error',
@@ -138,45 +138,62 @@ export function EditProfileDialog({ open, onOpenChange, userProfile }: EditProfi
 
     setIsSaving(true);
     try {
-      let newPhotoURL = userProfile.profileImageURL;
-      let photoHasChanged = false;
+      const nameHasChanged = name.trim() !== userProfile.name;
+      const photoHasBeenSelected = !!selectedFile;
+      const photoHasBeenRemoved = isPhotoRemoved;
+      const photoHasChanged = photoHasBeenSelected || photoHasBeenRemoved;
 
-      if (isPhotoRemoved) {
-        newPhotoURL = '';
-        photoHasChanged = true;
-      } else if (selectedFile) {
-        const storage = getStorage();
-        const filePath = `profile-images/${user.uid}/${Date.now()}-${selectedFile.name}`;
-        const newPhotoRef = storageRef(storage, filePath);
-        const snapshot = await uploadBytes(newPhotoRef, selectedFile);
-        newPhotoURL = await getDownloadURL(snapshot.ref);
-        photoHasChanged = true;
+      if (!nameHasChanged && !photoHasChanged) {
+        toast({
+          title: 'No Changes',
+          description: 'You have not made any changes to your profile.',
+        });
+        onOpenChange(false);
+        return;
       }
       
-      const nameHasChanged = name !== userProfile.name;
-      const updates: Promise<any>[] = [];
-      
-      // 1. Update Firebase Auth profile
-      if (nameHasChanged || photoHasChanged) {
-        updates.push(updateProfile(auth.currentUser, { 
-          displayName: name, 
-          photoURL: newPhotoURL 
-        }));
+      let newPhotoURL: string | undefined = undefined;
+
+      if (photoHasChanged) {
+        if (photoHasBeenRemoved) {
+          newPhotoURL = '';
+        } else if (selectedFile) {
+          const storage = getStorage();
+          const filePath = `profile-images/${user.uid}/${Date.now()}-${selectedFile.name}`;
+          const newPhotoRef = storageRef(storage, filePath);
+          const snapshot = await uploadBytes(newPhotoRef, selectedFile);
+          newPhotoURL = await getDownloadURL(snapshot.ref);
+        }
       }
 
-      // 2. Update Firestore user profile document
-      const userDocRef = doc(firestore, 'users', user.uid);
-      const userDocUpdates: Partial<UserProfile> = {};
-      if (nameHasChanged) userDocUpdates.name = name;
-      if (photoHasChanged) userDocUpdates.profileImageURL = newPhotoURL;
-      
-      if (Object.keys(userDocUpdates).length > 0) {
-        updates.push(updateDoc(userDocRef, userDocUpdates));
+      // Prepare updates
+      const authUpdates: { displayName?: string; photoURL?: string } = {};
+      const firestoreUpdates: Partial<UserProfile> = {};
+
+      if (nameHasChanged) {
+        authUpdates.displayName = name.trim();
+        firestoreUpdates.name = name.trim();
       }
 
-      if (updates.length > 0) {
-        await Promise.all(updates);
+      if (photoHasChanged && newPhotoURL !== undefined) {
+        authUpdates.photoURL = newPhotoURL;
+        firestoreUpdates.profileImageURL = newPhotoURL;
       }
+      
+      const updatePromises: Promise<any>[] = [];
+      
+      // Update Firebase Auth if there are changes
+      if (Object.keys(authUpdates).length > 0) {
+        updatePromises.push(updateProfile(auth.currentUser, authUpdates));
+      }
+
+      // Update Firestore if there are changes
+      if (Object.keys(firestoreUpdates).length > 0) {
+        const userDocRef = doc(firestore, 'users', user.uid);
+        updatePromises.push(updateDoc(userDocRef, firestoreUpdates));
+      }
+
+      await Promise.all(updatePromises);
       
       toast({
         title: 'Profile Updated',
